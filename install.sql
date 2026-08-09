@@ -4,10 +4,11 @@ CREATE TABLE IF NOT EXISTS `{{DB_PREFIX}}wallet_order` (
     `customer_id` INT UNSIGNED NOT NULL,
     `amount` DECIMAL(15,4) NOT NULL DEFAULT 0.0000,
     `transaction_id` INT UNSIGNED NOT NULL DEFAULT 0,
-    `status` TINYINT(1) NOT NULL DEFAULT 1,
+    `status` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1=active, 2=refunded',
     `date_added` DATETIME NOT NULL,
     PRIMARY KEY (`wallet_order_id`),
     UNIQUE KEY `uk_wallet_order_order` (`order_id`),
     KEY `idx_wallet_order_customer` (`customer_id`),
-    KEY `idx_wallet_order_transaction` (`transaction_id`)
+    KEY `idx_wallet_order_transaction` (`transaction_id`),
+    KEY `idx_wallet_order_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

@@ -3,16 +3,6 @@ namespace Opencart\System\Library\Ohbono;
 
 use RuntimeException;
 
-/**
- * Final order-level wallet debit coordinator.
- *
- * The debit is idempotent at order level. A wallet_order row is created
- * only after WalletService successfully creates the ledger transaction.
- *
- * IMPORTANT:
- * The caller should invoke this from the order-created integration before
- * treating the wallet-funded payment as completed.
- */
 class WalletOrderService
 {
     private $db;
@@ -41,11 +31,6 @@ class WalletOrderService
             return 0;
         }
 
-        /*
-         * WalletService performs the authoritative balance check and
-         * row-level wallet lock. Never trust the checkout/session amount
-         * without this second server-side validation.
-         */
         $transaction_id = $this->walletService->debit(
             $customer_id,
             round($amount, 4),
@@ -66,24 +51,62 @@ class WalletOrderService
         return $transaction_id;
     }
 
+    /**
+     * Refund the wallet-funded portion of an order.
+     *
+     * A separate credit transaction is created. The original debit is never
+     * edited or deleted, preserving the wallet ledger.
+     */
+    public function refundOrder(
+        int $order_id,
+        string $reference = '',
+        string $comment = ''
+    ): int {
+        $wallet_order = $this->walletOrder->get($order_id);
+
+        if (!$wallet_order || (int)$wallet_order['status'] !== 1) {
+            return 0;
+        }
+
+        $amount = round((float)$wallet_order['amount'], 4);
+
+        if ($amount <= 0) {
+            return 0;
+        }
+
+        $customer_id = (int)$wallet_order['customer_id'];
+
+        $transaction_id = $this->walletService->credit(
+            $customer_id,
+            $amount,
+            WalletTransaction::TYPE_REFUND,
+            $comment !== '' ? $comment : 'Wallet refund for order #' . $order_id,
+            $reference !== '' ? $reference : 'REFUND-' . $order_id,
+            $order_id,
+            0
+        );
+
+        $this->walletOrder->markRefunded($order_id);
+
+        return $transaction_id;
+    }
+
+    public function getOrderWalletAmount(int $order_id): float
+    {
+        $wallet_order = $this->walletOrder->get($order_id);
+
+        return $wallet_order ? round((float)$wallet_order['amount'], 4) : 0.0;
+    }
+
+    public function isRefunded(int $order_id): bool
+    {
+        $wallet_order = $this->walletOrder->get($order_id);
+
+        return $wallet_order && (int)$wallet_order['status'] === 2;
+    }
+
     public function isWalletFundedOrder(int $order_id): bool
     {
         return $this->walletOrder->exists($order_id);
-    }
-
-    public function getWalletOrder(int $order_id): array
-    {
-        if ($order_id <= 0) {
-            return [];
-        }
-
-        $query = $this->db->query(
-            "SELECT *
-             FROM `" . DB_PREFIX . "wallet_order`
-             WHERE `order_id` = '" . (int)$order_id . "'
-             LIMIT 1"
-        );
-
-        return $query->num_rows ? $query->row : [];
     }
 }

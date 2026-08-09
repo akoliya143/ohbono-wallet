@@ -25,21 +25,29 @@ class Wallet extends \Opencart\System\Engine\Model
         );
     }
 
-    public function isWalletFundedOrder(int $order_id): bool
+    public function refundOrder(int $order_id): int
     {
+        if ($order_id <= 0) {
+            return 0;
+        }
+
         $this->load->library('ohbono/WalletFactory');
 
         $factory = new WalletFactory($this->registry);
 
-        return $factory->orderService()->isWalletFundedOrder($order_id);
+        return $factory->orderService()->refundOrder(
+            $order_id,
+            'REFUND-' . $order_id,
+            'Wallet refund for order #' . $order_id
+        );
     }
 
-    public function getWalletOrder(int $order_id): array
+    public function getOrderWalletAmount(int $order_id): float
     {
         $this->load->library('ohbono/WalletFactory');
 
-        $factory = new WalletFactory($this->registry);
-
-        return $factory->orderService()->getWalletOrder($order_id);
+        return $this->registry->get('ohbono_wallet_factory')
+            ? 0.0
+            : (new WalletFactory($this->registry))->orderService()->getOrderWalletAmount($order_id);
     }
 }
