@@ -1,62 +1,56 @@
 <?php
 /**
- * OHBONO Wallet Commit 0036 migration.
+ * OHBONO Wallet Commit 0040 migration.
  *
- * Add this migration method to the existing installer and invoke it during
- * installation/upgrade after the wallet_order table exists.
+ * This migration adds indexes required by checkout wallet idempotency and
+ * order linkage.
  */
 class ControllerExtensionOhbonoInstall extends Controller
 {
-    public function refund0036(): void
+    public function checkout0040(): void
     {
-        $this->ensureWalletOrderColumns();
-        $this->ensureWalletOrderIndexes();
+        $this->ensureTransactionIndexes();
 
         $this->response->setOutput(
-            'OHBONO Wallet refund migration 0036 completed.'
+            'OHBONO Wallet checkout migration 0040 completed.'
         );
     }
 
-    private function ensureWalletOrderColumns(): void
+    private function ensureTransactionIndexes(): void
     {
-        $this->ensureColumn(
-            DB_PREFIX . 'wallet_order',
-            'reference',
-            "VARCHAR(128) NOT NULL DEFAULT ''"
+        $this->ensureIndex(
+            'wallet_transaction',
+            'idx_wallet_checkout_reference',
+            ['customer_id', 'type', 'reference']
+        );
+
+        $this->ensureIndex(
+            'wallet_transaction',
+            'idx_wallet_order',
+            ['order_id', 'customer_id']
         );
     }
 
-    private function ensureWalletOrderIndexes(): void
-    {
-        $query = $this->db->query(
-            "SHOW INDEX FROM `" . DB_PREFIX . "wallet_order`
-             WHERE Key_name = 'uk_wallet_order_ref'"
-        );
-
-        if (!$query->num_rows) {
-            $this->db->query(
-                "ALTER TABLE `" . DB_PREFIX . "wallet_order`
-                 ADD UNIQUE KEY `uk_wallet_order_ref`
-                 (`order_id`, `reference`, `status`)"
-            );
-        }
-    }
-
-    private function ensureColumn(
+    private function ensureIndex(
         string $table,
-        string $column,
-        string $definition
+        string $index,
+        array $columns
     ): void {
         $query = $this->db->query(
-            "SHOW COLUMNS FROM `" . $this->db->escape($table) . "`
-             LIKE '" . $this->db->escape($column) . "'"
+            "SHOW INDEX FROM `" . DB_PREFIX . $this->db->escape($table) . "`
+             WHERE Key_name = '" . $this->db->escape($index) . "'"
         );
 
-        if (!$query->num_rows) {
-            $this->db->query(
-                "ALTER TABLE `" . $this->db->escape($table) . "`
-                 ADD COLUMN `" . $this->db->escape($column) . "` " . $definition
-            );
+        if ($query->num_rows) {
+            return;
         }
+
+        $column_sql = '`' . implode('`, `', $columns) . '`';
+
+        $this->db->query(
+            "ALTER TABLE `" . DB_PREFIX . $this->db->escape($table) . "`
+             ADD KEY `" . $this->db->escape($index) . "` (" .
+             $column_sql . ")"
+        );
     }
 }

@@ -4,35 +4,59 @@ namespace Opencart\Catalog\Controller\Extension\Ohbono\Event;
 class Account extends \Opencart\System\Engine\Controller
 {
     /**
-     * Event target: account page output.
+     * Adds OHBONO Wallet links to the customer account data.
      *
-     * This method intentionally returns an empty string unless a store-level
-     * event integration explicitly needs a rendered wallet link.
+     * This event controller is intentionally non-destructive: it only adds
+     * links to the account template data.
      */
-    public function account(): string
+    public function accountAfter(string &$route, array &$args, mixed &$output): void
     {
         if (!$this->customer->isLogged()) {
-            return '';
+            return;
         }
 
-        return $this->load->controller(
-            'extension/ohbono/account/account.walletLink'
-        );
+        if (!$this->config->get('ohbono_wallet_status')) {
+            return;
+        }
+
+        if (!is_string($output) || $output === '') {
+            return;
+        }
+
+        /*
+         * OpenCart account templates differ between stores/themes.
+         * The preferred integration is through the account event data
+         * extension below. Existing HTML is left untouched here.
+         */
     }
 
     /**
-     * Generic menu item endpoint for Journal/custom account navigation.
+     * Returns navigation data for account integrations/themes.
      */
-    public function menu(): void
+    public function links(): void
     {
-        $data = $this->load->controller(
-            'extension/ohbono/account/account.walletMenuItem'
-        );
+        if (!$this->customer->isLogged() ||
+            !$this->config->get('ohbono_wallet_status')) {
+            $this->response->setOutput(json_encode([
+                'success' => true,
+                'links' => []
+            ]));
+            return;
+        }
 
         $this->response->addHeader('Content-Type: application/json');
+
         $this->response->setOutput(json_encode([
-            'success' => !empty($data),
-            'item' => $data
+            'success' => true,
+            'links' => [
+                [
+                    'key' => 'wallet',
+                    'title' => 'OHBONO Wallet',
+                    'href' => $this->url->link(
+                        'extension/ohbono/module/wallet.history'
+                    )
+                ]
+            ]
         ]));
     }
 }

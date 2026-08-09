@@ -1,0 +1,15 @@
+{#
+    OHBONO Wallet account navigation snippet.
+
+    Include this snippet from the storefront customer account navigation
+    where the theme provides an extension/template hook.
+#}
+
+{% if ohbono_wallet_status %}
+<li class="list-group-item">
+    <a href="{{ ohbono_wallet_url }}">
+        <i class="fa-solid fa-wallet"></i>
+        {{ ohbono_wallet_title }}
+    </a>
+</li>
+{% endif %}

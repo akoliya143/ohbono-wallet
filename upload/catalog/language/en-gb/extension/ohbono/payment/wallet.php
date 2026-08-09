@@ -1,11 +1,12 @@
 <?php
-$_['text_wallet'] = 'Wallet';
-$_['text_description'] = 'Pay using your OHBONO wallet balance.';
-$_['text_available_balance'] = 'Available wallet balance';
-$_['text_wallet_used'] = 'Wallet amount';
-$_['text_remaining'] = 'Remaining to pay';
-$_['text_apply'] = 'Apply Wallet';
-$_['text_remove'] = 'Remove Wallet';
-$_['text_amount'] = 'Amount to use';
-$_['text_login'] = 'Please login to use your wallet.';
-$_['text_applied'] = 'Wallet amount applied.';
+$_['heading_title'] = 'OHBONO Wallet';
+
+$_['text_title'] = 'Pay with OHBONO Wallet';
+$_['text_balance'] = 'Wallet Balance';
+$_['text_available'] = 'Available';
+$_['text_applied'] = 'Wallet Amount';
+$_['text_remaining'] = 'Remaining Order Total';
+
+$_['error_login'] = 'Please log in before using wallet payment.';
+$_['error_balance'] = 'Your wallet balance is not sufficient.';
+$_['error_invalid_total'] = 'Invalid order total.';

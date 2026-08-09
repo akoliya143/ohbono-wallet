@@ -1,2 +1,2 @@
 <?php
-$_['text_wallet'] = 'My Wallet';
+$_['text_wallet'] = 'OHBONO Wallet';
