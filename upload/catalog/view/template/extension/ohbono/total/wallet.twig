@@ -18,6 +18,7 @@
                 step="0.0001"
                 value="{{ wallet_use > 0 ? wallet_use : '' }}"
                 placeholder="{{ text_amount }}"
+                autocomplete="off"
             >
 
             <button type="button" id="ohbono-wallet-apply" class="btn btn-primary">
@@ -29,87 +30,144 @@
             </button>
         </div>
 
-        <div id="ohbono-wallet-message" class="small mt-2"></div>
+        <div id="ohbono-wallet-message" class="small mt-2" role="status" aria-live="polite"></div>
     </div>
 </div>
 
 <script>
 (function () {
+    'use strict';
+
+    const root = document.getElementById('ohbono-wallet-checkout');
+
+    if (!root) {
+        return;
+    }
+
     const applyUrl = {{ apply|json_encode|raw }};
     const removeUrl = {{ remove|json_encode|raw }};
+    const amountInput = document.getElementById('ohbono-wallet-amount');
+    const messageElement = document.getElementById('ohbono-wallet-message');
+    const applyButton = document.getElementById('ohbono-wallet-apply');
+    const removeButton = document.getElementById('ohbono-wallet-remove');
+
+    function setBusy(busy) {
+        applyButton.disabled = busy;
+        removeButton.disabled = busy;
+        amountInput.disabled = busy;
+    }
 
     function message(text, success) {
-        const element = document.getElementById('ohbono-wallet-message');
+        messageElement.className = 'small mt-2 ' + (success ? 'text-success' : 'text-danger');
+        messageElement.textContent = text;
+    }
 
-        if (!element) {
+    function dispatchRefresh() {
+        document.dispatchEvent(new CustomEvent('ohbono:wallet-applied', {
+            detail: {
+                source: 'ohbono-wallet'
+            }
+        }));
+
+        /*
+         * Journal 4 adapter hook.
+         *
+         * Journal integration can listen for this event and execute its
+         * native checkout refresh method. The wallet module itself does not
+         * call private Journal functions, keeping the extension update-safe.
+         */
+    }
+
+    applyButton.addEventListener('click', function () {
+        const amount = amountInput.value;
+
+        if (!amount || parseFloat(amount) <= 0) {
+            message('Please enter a valid wallet amount.', false);
             return;
         }
 
-        element.className = 'small mt-2 ' + (success ? 'text-success' : 'text-danger');
-        element.textContent = text;
-    }
-
-    function refreshCheckout() {
-        /*
-         * Journal 4 has its own AJAX checkout refresh lifecycle.
-         * The standard OpenCart event is intentionally not hard-coded here.
-         *
-         * A custom event is emitted so the Journal adapter added later can
-         * trigger its native totals refresh without modifying this component.
-         */
-        document.dispatchEvent(new CustomEvent('ohbono:wallet-applied'));
-    }
-
-    document.getElementById('ohbono-wallet-apply')?.addEventListener('click', function () {
-        const amount = document.getElementById('ohbono-wallet-amount').value;
-
-        const body = new URLSearchParams();
-        body.append('amount', amount);
+        setBusy(true);
 
         fetch(applyUrl, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
                 'X-Requested-With': 'XMLHttpRequest'
             },
-            body: body.toString()
+            body: new URLSearchParams({
+                amount: amount
+            }).toString()
         })
-        .then(response => response.json())
-        .then(result => {
-            if (!result.success) {
-                message(result.error || 'Unable to apply wallet.', false);
-                return;
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
             }
 
-            message('Wallet amount applied: ' + result.formatted_wallet_use, true);
-            refreshCheckout();
+            return response.json();
         })
-        .catch(() => {
-            message('Unable to apply wallet. Please try again.', false);
+        .then(function (result) {
+            if (!result.success) {
+                throw new Error(result.error || 'Unable to apply wallet.');
+            }
+
+            amountInput.value = result.wallet_use;
+            message(
+                'Wallet applied: ' + result.formatted_wallet_use +
+                '. Remaining: ' + result.formatted_remaining,
+                true
+            );
+
+            dispatchRefresh();
+        })
+        .catch(function (error) {
+            message(error.message || 'Unable to apply wallet. Please try again.', false);
+        })
+        .finally(function () {
+            setBusy(false);
         });
     });
 
-    document.getElementById('ohbono-wallet-remove')?.addEventListener('click', function () {
+    removeButton.addEventListener('click', function () {
+        setBusy(true);
+
         fetch(removeUrl, {
             method: 'POST',
+            credentials: 'same-origin',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest'
             }
         })
-        .then(response => response.json())
-        .then(result => {
-            if (!result.success) {
-                message('Unable to remove wallet payment.', false);
-                return;
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
             }
 
-            document.getElementById('ohbono-wallet-amount').value = '';
-            message('Wallet payment removed.', true);
-            refreshCheckout();
+            return response.json();
         })
-        .catch(() => {
-            message('Unable to remove wallet payment.', false);
+        .then(function (result) {
+            if (!result.success) {
+                throw new Error('Unable to remove wallet payment.');
+            }
+
+            amountInput.value = '';
+            message('Wallet payment removed.', true);
+            dispatchRefresh();
+        })
+        .catch(function (error) {
+            message(error.message || 'Unable to remove wallet payment.', false);
+        })
+        .finally(function () {
+            setBusy(false);
         });
+    });
+
+    /*
+     * Allows a Journal adapter or another checkout integration to request a
+     * wallet-total refresh without knowing the wallet's internal structure.
+     */
+    document.addEventListener('ohbono:wallet-refresh', function () {
+        dispatchRefresh();
     });
 })();
 </script>
