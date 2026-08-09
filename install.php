@@ -1,0 +1,2 @@
+<?php
+// Installer entry point.

@@ -1,0 +1,2 @@
+<?php
+// Uninstaller entry point.
