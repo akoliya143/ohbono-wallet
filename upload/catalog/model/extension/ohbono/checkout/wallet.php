@@ -6,13 +6,6 @@ use RuntimeException;
 
 class Wallet extends \Opencart\System\Engine\Model
 {
-    /**
-     * Debit wallet for a newly-created order.
-     *
-     * This method is intentionally callable by an order integration/event.
-     * The caller should perform it only after the order ID exists and before
-     * the final payment state is considered complete.
-     */
     public function debitForOrder(int $order_id, int $customer_id, float $amount): int
     {
         if ($order_id <= 0 || $customer_id <= 0 || $amount <= 0) {
@@ -22,9 +15,8 @@ class Wallet extends \Opencart\System\Engine\Model
         $this->load->library('ohbono/WalletFactory');
 
         $factory = new WalletFactory($this->registry);
-        $order_service = $factory->orderService();
 
-        return $order_service->debitForOrder(
+        return $factory->orderService()->debitForOrder(
             $order_id,
             $customer_id,
             $amount,
@@ -40,5 +32,14 @@ class Wallet extends \Opencart\System\Engine\Model
         $factory = new WalletFactory($this->registry);
 
         return $factory->orderService()->isWalletFundedOrder($order_id);
+    }
+
+    public function getWalletOrder(int $order_id): array
+    {
+        $this->load->library('ohbono/WalletFactory');
+
+        $factory = new WalletFactory($this->registry);
+
+        return $factory->orderService()->getWalletOrder($order_id);
     }
 }

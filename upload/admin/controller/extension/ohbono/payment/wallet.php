@@ -6,7 +6,6 @@ class Wallet extends \Opencart\System\Engine\Controller
     public function index(): void
     {
         $this->load->language('extension/ohbono/payment/wallet');
-
         $this->load->model('setting/setting');
 
         if ($this->request->server['REQUEST_METHOD'] === 'POST' && $this->validate()) {
@@ -66,11 +65,23 @@ class Wallet extends \Opencart\System\Engine\Controller
         }
 
         $this->load->model('setting/setting');
-
         $this->model_setting_setting->editSetting('payment_wallet', [
             'payment_wallet_status' => 1,
             'payment_wallet_sort_order' => 1
         ]);
+
+        $this->load->model('setting/event');
+
+        $this->model_setting_event->deleteEventByCode('ohbono_wallet_order_created');
+
+        $this->model_setting_event->addEvent(
+            'ohbono_wallet_order_created',
+            'Debit wallet after an order is created for Wallet payment.',
+            'catalog/model/checkout/order/addOrder/after',
+            'extension/ohbono/payment/wallet.orderCreated',
+            1,
+            1
+        );
     }
 
     public function uninstall(): void
@@ -81,13 +92,15 @@ class Wallet extends \Opencart\System\Engine\Controller
 
         $this->load->model('setting/setting');
         $this->model_setting_setting->deleteSetting('payment_wallet');
+
+        $this->load->model('setting/event');
+        $this->model_setting_event->deleteEventByCode('ohbono_wallet_order_created');
     }
 
     protected function validate(): bool
     {
         if (!$this->user->hasPermission('modify', 'extension/ohbono/payment/wallet')) {
             $this->error['warning'] = $this->language->get('error_permission');
-
             return false;
         }
 

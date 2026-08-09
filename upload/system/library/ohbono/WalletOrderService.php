@@ -4,10 +4,14 @@ namespace Opencart\System\Library\Ohbono;
 use RuntimeException;
 
 /**
- * Coordinates wallet payment state with an OpenCart order.
+ * Final order-level wallet debit coordinator.
  *
- * The order itself must already exist before calling debitForOrder().
- * The caller is responsible for the surrounding database transaction.
+ * The debit is idempotent at order level. A wallet_order row is created
+ * only after WalletService successfully creates the ledger transaction.
+ *
+ * IMPORTANT:
+ * The caller should invoke this from the order-created integration before
+ * treating the wallet-funded payment as completed.
  */
 class WalletOrderService
 {
@@ -37,9 +41,14 @@ class WalletOrderService
             return 0;
         }
 
+        /*
+         * WalletService performs the authoritative balance check and
+         * row-level wallet lock. Never trust the checkout/session amount
+         * without this second server-side validation.
+         */
         $transaction_id = $this->walletService->debit(
             $customer_id,
-            $amount,
+            round($amount, 4),
             WalletTransaction::TYPE_ORDER_PAYMENT,
             $comment !== '' ? $comment : 'Wallet payment for order #' . $order_id,
             $reference !== '' ? $reference : 'ORDER-' . $order_id,
@@ -50,7 +59,7 @@ class WalletOrderService
         $this->walletOrder->add(
             $order_id,
             $customer_id,
-            $amount,
+            round($amount, 4),
             $transaction_id
         );
 
@@ -60,5 +69,21 @@ class WalletOrderService
     public function isWalletFundedOrder(int $order_id): bool
     {
         return $this->walletOrder->exists($order_id);
+    }
+
+    public function getWalletOrder(int $order_id): array
+    {
+        if ($order_id <= 0) {
+            return [];
+        }
+
+        $query = $this->db->query(
+            "SELECT *
+             FROM `" . DB_PREFIX . "wallet_order`
+             WHERE `order_id` = '" . (int)$order_id . "'
+             LIMIT 1"
+        );
+
+        return $query->num_rows ? $query->row : [];
     }
 }
