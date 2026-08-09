@@ -22,7 +22,10 @@ class Wallet extends \Opencart\System\Engine\Controller
             return;
         }
 
-        $requested = round((float)($this->request->post['amount'] ?? 0), 4);
+        $requested = round(
+            (float)($this->request->post['amount'] ?? 0),
+            4
+        );
 
         if ($requested <= 0) {
             $this->json([
@@ -34,30 +37,18 @@ class Wallet extends \Opencart\System\Engine\Controller
 
         $this->load->model('extension/ohbono/total/wallet');
 
-        $cart_total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
+        $cart_total = $this->model_extension_ohbono_total_wallet
+            ->getCurrentCartTotal();
 
-        if ($cart_total <= 0) {
-            $this->json([
-                'success' => false,
-                'error' => 'There is no payable amount in your cart.'
-            ]);
-            return;
-        }
-
-        $allowed = $this->model_extension_ohbono_total_wallet->calculateAllowedWalletUse(
-            $requested,
-            $cart_total
-        );
+        $allowed = $this->model_extension_ohbono_total_wallet
+            ->calculateAllowedWalletUse($requested, $cart_total);
 
         if ($allowed <= 0) {
-            $balance = $this->model_extension_ohbono_total_wallet->getAvailableBalance(
-                (int)$this->customer->getId()
-            );
-
             $this->json([
                 'success' => false,
                 'error' => 'The requested wallet amount cannot be applied.',
-                'balance' => $balance
+                'balance' => $this->model_extension_ohbono_total_wallet
+                    ->getAvailableBalance((int)$this->customer->getId())
             ]);
             return;
         }
@@ -67,9 +58,8 @@ class Wallet extends \Opencart\System\Engine\Controller
         $this->json([
             'success' => true,
             'wallet_used' => $allowed,
-            'wallet_balance' => $this->model_extension_ohbono_total_wallet->getAvailableBalance(
-                (int)$this->customer->getId()
-            ),
+            'wallet_balance' => $this->model_extension_ohbono_total_wallet
+                ->getAvailableBalance((int)$this->customer->getId()),
             'cart_total' => $cart_total,
             'remaining' => round(max(0, $cart_total - $allowed), 4),
             'message' => 'Wallet amount applied successfully.'
@@ -98,16 +88,17 @@ class Wallet extends \Opencart\System\Engine\Controller
 
         $this->load->model('extension/ohbono/total/wallet');
 
-        $cart_total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
-        $balance = $this->model_extension_ohbono_total_wallet->getAvailableBalance(
-            (int)$this->customer->getId()
-        );
-        $used = $this->model_extension_ohbono_total_wallet->getSessionWalletUse();
+        $cart_total = $this->model_extension_ohbono_total_wallet
+            ->getCurrentCartTotal();
 
-        $allowed = $this->model_extension_ohbono_total_wallet->calculateAllowedWalletUse(
-            $used,
-            $cart_total
-        );
+        $balance = $this->model_extension_ohbono_total_wallet
+            ->getAvailableBalance((int)$this->customer->getId());
+
+        $used = $this->model_extension_ohbono_total_wallet
+            ->getSessionWalletUse();
+
+        $allowed = $this->model_extension_ohbono_total_wallet
+            ->calculateAllowedWalletUse($used, $cart_total);
 
         if ($allowed != $used) {
             if ($allowed > 0) {

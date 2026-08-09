@@ -31,6 +31,11 @@
                         {{ text_wallet_used }}:
                         <strong id="ohbono-wallet-used">{{ wallet_used }}</strong>
                     </div>
+
+                    <div class="small text-muted">
+                        {{ text_remaining }}:
+                        <strong id="ohbono-wallet-remaining">-</strong>
+                    </div>
                 </div>
             </div>
 
@@ -57,11 +62,20 @@
     </div>
 </div>
 
+<script src="catalog/view/javascript/ohbono/wallet-journal4.js"></script>
+
 {% if balance > 0 %}
 <script>
 (function () {
     'use strict';
 
+    if (window.ohbonoWalletCheckoutInitialized) {
+        return;
+    }
+
+    window.ohbonoWalletCheckoutInitialized = true;
+
+    const infoUrl = 'index.php?route=extension/ohbono/checkout/wallet.info';
     const applyUrl = 'index.php?route=extension/ohbono/checkout/wallet.apply';
     const removeUrl = 'index.php?route=extension/ohbono/checkout/wallet.remove';
 
@@ -70,6 +84,8 @@
     const removeButton = document.getElementById('ohbono-wallet-remove');
     const message = document.getElementById('ohbono-wallet-message');
     const used = document.getElementById('ohbono-wallet-used');
+    const remaining = document.getElementById('ohbono-wallet-remaining');
+    const balance = document.getElementById('ohbono-wallet-balance');
 
     if (!amount || !applyButton || !removeButton) {
         return;
@@ -94,6 +110,43 @@
         });
     }
 
+    function getInfo() {
+        return fetch(infoUrl, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        }).then(function (response) {
+            return response.json();
+        });
+    }
+
+    function updateDisplay(result) {
+        if (typeof result.wallet_used !== 'undefined') {
+            used.textContent = result.wallet_used;
+        }
+
+        if (typeof result.wallet_balance !== 'undefined') {
+            balance.textContent = result.wallet_balance;
+        }
+
+        if (typeof result.balance !== 'undefined') {
+            balance.textContent = result.balance;
+        }
+
+        if (typeof result.remaining !== 'undefined') {
+            remaining.textContent = result.remaining;
+        }
+    }
+
+    function refreshCheckout() {
+        if (window.ohbonoWalletJournal4) {
+            return window.ohbonoWalletJournal4.refresh();
+        }
+
+        return Promise.resolve(false);
+    }
+
     applyButton.addEventListener('click', function () {
         message.innerHTML = '';
         applyButton.disabled = true;
@@ -107,18 +160,13 @@
                     return;
                 }
 
-                used.textContent = result.wallet_used;
                 amount.value = result.wallet_used;
+                updateDisplay(result);
 
                 message.innerHTML = '<div class="alert alert-success">' +
-                    (result.message || 'Wallet applied.') +
+                    (result.message || 'Wallet amount applied.') +
                     '</div>';
 
-                /*
-                 * OpenCart/Journals can use their own checkout refresh mechanism.
-                 * Trigger a generic custom event first; integrations can listen
-                 * and call the appropriate Journal checkout refresh.
-                 */
                 document.dispatchEvent(new CustomEvent('ohbonoWalletChanged', {
                     detail: result
                 }));
@@ -144,8 +192,11 @@
                     return;
                 }
 
-                used.textContent = '0';
                 amount.value = '';
+                updateDisplay({
+                    wallet_used: 0,
+                    remaining: '-'
+                });
 
                 message.innerHTML = '<div class="alert alert-success">' +
                     (result.message || 'Wallet removed.') +
@@ -161,6 +212,26 @@
             })
             .finally(function () {
                 removeButton.disabled = false;
+            });
+    });
+
+    /*
+     * Keep the widget synchronized after address/shipping/payment changes.
+     * Journal/OpenCart can dispatch this event from its checkout refresh.
+     */
+    document.addEventListener('ohbonoWalletRefreshInfo', function () {
+        getInfo()
+            .then(function (result) {
+                if (result.success) {
+                    updateDisplay(result);
+
+                    if (result.wallet_used > 0) {
+                        amount.value = result.wallet_used;
+                    }
+                }
+            })
+            .catch(function () {
+                /* Keep the existing UI when an informational refresh fails. */
             });
     });
 }());
