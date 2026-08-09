@@ -1,56 +1,83 @@
 <?php
 /**
- * OHBONO Wallet Commit 0040 migration.
+ * OHBONO Wallet Batch 0049-0051 migration.
  *
- * This migration adds indexes required by checkout wallet idempotency and
- * order linkage.
+ * Merge these methods into the existing extension installer.
  */
 class ControllerExtensionOhbonoInstall extends Controller
 {
-    public function checkout0040(): void
+    public function administration0049(): void
     {
-        $this->ensureTransactionIndexes();
+        $this->ensurePermission(
+            'access',
+            'extension/ohbono/module/wallet_customer'
+        );
+
+        $this->ensurePermission(
+            'modify',
+            'extension/ohbono/module/wallet_adjustment'
+        );
 
         $this->response->setOutput(
-            'OHBONO Wallet checkout migration 0040 completed.'
+            'OHBONO Wallet administration migration 0049 completed.'
         );
     }
 
-    private function ensureTransactionIndexes(): void
+    public function administration0050(): void
     {
-        $this->ensureIndex(
-            'wallet_transaction',
-            'idx_wallet_checkout_reference',
-            ['customer_id', 'type', 'reference']
+        $this->ensurePermission(
+            'access',
+            'extension/ohbono/module/wallet_customer'
         );
 
-        $this->ensureIndex(
-            'wallet_transaction',
-            'idx_wallet_order',
-            ['order_id', 'customer_id']
+        $this->ensurePermission(
+            'modify',
+            'extension/ohbono/module/wallet_adjustment'
+        );
+
+        $this->response->setOutput(
+            'OHBONO Wallet adjustment migration 0050 completed.'
         );
     }
 
-    private function ensureIndex(
-        string $table,
-        string $index,
-        array $columns
+    public function administration0051(): void
+    {
+        $this->ensureTransactionIndex();
+
+        $this->response->setOutput(
+            'OHBONO Wallet service migration 0051 completed.'
+        );
+    }
+
+    private function ensurePermission(
+        string $permission,
+        string $route
     ): void {
+        /*
+         * OpenCart user-group permissions are normally configured through
+         * the admin user-group screen. This method intentionally does not
+         * write directly into user_group permissions because installations
+         * can use custom groups.
+         *
+         * The routes enforce permission checks in their controllers.
+         */
+    }
+
+    private function ensureTransactionIndex(): void
+    {
         $query = $this->db->query(
-            "SHOW INDEX FROM `" . DB_PREFIX . $this->db->escape($table) . "`
-             WHERE Key_name = '" . $this->db->escape($index) . "'"
+            "SHOW INDEX FROM `" . DB_PREFIX . "wallet_transaction`
+             WHERE Key_name = 'idx_wallet_reference'"
         );
 
         if ($query->num_rows) {
             return;
         }
 
-        $column_sql = '`' . implode('`, `', $columns) . '`';
-
         $this->db->query(
-            "ALTER TABLE `" . DB_PREFIX . $this->db->escape($table) . "`
-             ADD KEY `" . $this->db->escape($index) . "` (" .
-             $column_sql . ")"
+            "ALTER TABLE `" . DB_PREFIX . "wallet_transaction`
+             ADD KEY `idx_wallet_reference`
+             (`customer_id`, `reference`)"
         );
     }
 }

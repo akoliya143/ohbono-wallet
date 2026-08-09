@@ -3,80 +3,48 @@ namespace Opencart\Admin\Controller\Extension\Ohbono\Module;
 
 class WalletSettings extends \Opencart\System\Engine\Controller
 {
-    private const SETTINGS = [
-        'ohbono_wallet_status',
-        'ohbono_wallet_allow_checkout',
-        'ohbono_wallet_minimum_use',
-        'ohbono_wallet_maximum_use',
-        'ohbono_wallet_history_limit',
-        'ohbono_wallet_sort_order'
-    ];
-
     public function index(): void
     {
         $this->load->language('extension/ohbono/module/wallet_settings');
 
         if (!$this->user->hasPermission(
-            'access',
+            'modify',
             'extension/ohbono/module/wallet_settings'
         )) {
-            $this->response->setOutput($this->language->get('error_permission'));
+            $this->response->setOutput(
+                $this->language->get('error_permission')
+            );
             return;
         }
-
-        $this->load->model('setting/setting');
 
         if ($this->request->server['REQUEST_METHOD'] === 'POST') {
-            if (!$this->user->hasPermission(
-                'modify',
-                'extension/ohbono/module/wallet_settings'
-            )) {
-                $this->session->data['error'] = $this->language->get('error_permission');
-            } else {
-                $this->save();
-            }
-
-            $this->response->redirect($this->url->link(
-                'extension/ohbono/module/wallet_settings',
-                'user_token=' . $this->session->data['user_token']
-            ));
+            $this->save();
             return;
         }
 
-        $data['heading_title'] = $this->language->get('heading_title');
+        $data = [];
 
-        $data['text_edit'] = $this->language->get('text_edit');
+        $data['heading_title'] = $this->language->get('heading_title');
         $data['text_enabled'] = $this->language->get('text_enabled');
         $data['text_disabled'] = $this->language->get('text_disabled');
-        $data['text_help'] = $this->language->get('text_help');
-
         $data['entry_status'] = $this->language->get('entry_status');
-        $data['entry_allow_checkout'] = $this->language->get('entry_allow_checkout');
-        $data['entry_minimum_use'] = $this->language->get('entry_minimum_use');
-        $data['entry_maximum_use'] = $this->language->get('entry_maximum_use');
-        $data['entry_history_limit'] = $this->language->get('entry_history_limit');
         $data['entry_sort_order'] = $this->language->get('entry_sort_order');
-
-        $data['help_minimum_use'] = $this->language->get('help_minimum_use');
+        $data['entry_maximum_use'] = $this->language->get('entry_maximum_use');
+        $data['entry_reservation_ttl'] = $this->language->get('entry_reservation_ttl');
         $data['help_maximum_use'] = $this->language->get('help_maximum_use');
-        $data['help_history_limit'] = $this->language->get('help_history_limit');
-
+        $data['help_reservation_ttl'] = $this->language->get('help_reservation_ttl');
         $data['button_save'] = $this->language->get('button_save');
-        $data['button_cancel'] = $this->language->get('button_cancel');
 
-        $data['error_warning'] = $this->session->data['error'] ?? '';
-        unset($this->session->data['error']);
+        $data['status'] = (int)$this->config->get('ohbono_wallet_status');
+        $data['sort_order'] = (int)$this->config->get('ohbono_wallet_sort_order');
+        $data['maximum_use'] = (float)$this->config->get('ohbono_wallet_maximum_use');
+        $data['reservation_ttl'] = (int)$this->config->get('ohbono_wallet_reservation_ttl');
 
-        foreach (self::SETTINGS as $setting) {
-            $data[$setting] = $this->config->get($setting);
+        if ($data['reservation_ttl'] < 300) {
+            $data['reservation_ttl'] = 1800;
         }
 
-        $data['save'] = $this->url->link(
-            'extension/ohbono/module/wallet_settings',
-            'user_token=' . $this->session->data['user_token']
-        );
-
-        $data['cancel'] = $this->url->link(
+        $data['action'] = $this->url->link(
             'extension/ohbono/module/wallet_settings',
             'user_token=' . $this->session->data['user_token']
         );
@@ -95,45 +63,59 @@ class WalletSettings extends \Opencart\System\Engine\Controller
 
     private function save(): void
     {
-        $this->load->model('setting/setting');
-
-        $status = !empty($this->request->post['ohbono_wallet_status']) ? 1 : 0;
-        $allow_checkout = !empty($this->request->post['ohbono_wallet_allow_checkout']) ? 1 : 0;
-
-        $minimum = round(
-            max(0, (float)($this->request->post['ohbono_wallet_minimum_use'] ?? 0)),
+        $status = !empty($this->request->post['status']) ? 1 : 0;
+        $sort_order = (int)($this->request->post['sort_order'] ?? 0);
+        $maximum_use = round(
+            (float)($this->request->post['maximum_use'] ?? 0),
             4
         );
-
-        $maximum = round(
-            max(0, (float)($this->request->post['ohbono_wallet_maximum_use'] ?? 0)),
-            4
+        $reservation_ttl = (int)(
+            $this->request->post['reservation_ttl'] ?? 1800
         );
 
-        $history_limit = max(
-            5,
-            min(100, (int)($this->request->post['ohbono_wallet_history_limit'] ?? 20))
-        );
-
-        $sort_order = (int)($this->request->post['ohbono_wallet_sort_order'] ?? 0);
-
-        if ($maximum > 0 && $minimum > $maximum) {
-            $this->session->data['error'] =
-                $this->language->get('error_minimum_greater_maximum');
-
-            return;
+        if ($sort_order < 0) {
+            $sort_order = 0;
         }
 
-        $this->model_setting_setting->editSetting('ohbono_wallet', [
+        if ($maximum_use < 0) {
+            $maximum_use = 0;
+        }
+
+        if ($reservation_ttl < 300) {
+            $reservation_ttl = 300;
+        }
+
+        $this->db->query(
+            "DELETE FROM `" . DB_PREFIX . "setting`
+             WHERE `store_id` = '0'
+             AND `code` = 'ohbono_wallet'"
+        );
+
+        $settings = [
             'ohbono_wallet_status' => $status,
-            'ohbono_wallet_allow_checkout' => $allow_checkout,
-            'ohbono_wallet_minimum_use' => $minimum,
-            'ohbono_wallet_maximum_use' => $maximum,
-            'ohbono_wallet_history_limit' => $history_limit,
-            'ohbono_wallet_sort_order' => $sort_order
-        ]);
+            'ohbono_wallet_sort_order' => $sort_order,
+            'ohbono_wallet_maximum_use' => $maximum_use,
+            'ohbono_wallet_reservation_ttl' => $reservation_ttl
+        ];
+
+        foreach ($settings as $key => $value) {
+            $this->db->query(
+                "INSERT INTO `" . DB_PREFIX . "setting`
+                 SET `store_id` = '0',
+                     `code` = 'ohbono_wallet',
+                     `key` = '" . $this->db->escape($key) . "',
+                     `value` = '" . $this->db->escape((string)$value) . "'"
+            );
+        }
 
         $this->session->data['success'] =
             $this->language->get('text_success');
+
+        $this->response->redirect(
+            $this->url->link(
+                'extension/ohbono/module/wallet_settings',
+                'user_token=' . $this->session->data['user_token']
+            )
+        );
     }
 }

@@ -1,38 +1,53 @@
 <div id="ohbono-wallet-payment"
      class="card border-0 shadow-sm mb-3"
-     data-wallet-url="{{ wallet_url }}"
-     data-apply-url="{{ apply_url }}"
-     data-restore-url="{{ restore_url }}">
+     data-confirm-url="{{ confirm_url }}"
+     data-remove-url="{{ remove_url }}"
+     data-cleanup-url="{{ cleanup_url }}">
 
     <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex flex-wrap justify-content-between gap-3">
             <div>
-                <strong>{{ text_title }}</strong>
+                <div class="fw-semibold">{{ text_title }}</div>
                 <div class="small text-muted">
                     {{ text_balance }}:
-                    <span id="ohbono-wallet-balance">--</span>
+                    <strong id="ohbono-wallet-balance">--</strong>
                 </div>
             </div>
 
-            <button type="button"
-                    id="ohbono-wallet-apply"
-                    class="btn btn-primary">
-                {{ text_applied }}
-            </button>
+            <div class="d-flex gap-2">
+                <button type="button"
+                        id="ohbono-wallet-confirm"
+                        class="btn btn-primary">
+                    {{ button_apply }}
+                </button>
+
+                <button type="button"
+                        id="ohbono-wallet-remove"
+                        class="btn btn-outline-secondary d-none">
+                    {{ button_remove }}
+                </button>
+            </div>
         </div>
 
-        <div class="small text-muted">
-            {{ text_available }}:
-            <span id="ohbono-wallet-available">--</span>
-        </div>
+        <div class="row g-2 mt-3 small">
+            <div class="col-sm-4">
+                {{ text_available }}:
+                <strong id="ohbono-wallet-available">--</strong>
+            </div>
 
-        <div class="small text-muted">
-            {{ text_remaining }}:
-            <span id="ohbono-wallet-remaining">--</span>
+            <div class="col-sm-4">
+                {{ text_applied }}:
+                <strong id="ohbono-wallet-applied">--</strong>
+            </div>
+
+            <div class="col-sm-4">
+                {{ text_remaining }}:
+                <strong id="ohbono-wallet-remaining">--</strong>
+            </div>
         </div>
 
         <div id="ohbono-wallet-error"
-             class="alert alert-danger mt-3 d-none"></div>
+             class="alert alert-danger mt-3 mb-0 d-none"></div>
     </div>
 </div>
 
@@ -44,30 +59,71 @@
         return;
     }
 
-    const button = document.getElementById('ohbono-wallet-apply');
-    const errorBox = document.getElementById('ohbono-wallet-error');
+    const applyButton =
+        document.getElementById('ohbono-wallet-confirm');
+
+    const removeButton =
+        document.getElementById('ohbono-wallet-remove');
+
+    const errorBox =
+        document.getElementById('ohbono-wallet-error');
+
+    function total() {
+        return Number(window.ohbonoWalletOrderTotal || 0);
+    }
 
     function showError(message) {
-        errorBox.textContent = message || 'Unable to apply wallet payment.';
+        errorBox.textContent =
+            message || 'Unable to update wallet payment.';
         errorBox.classList.remove('d-none');
     }
 
-    button.addEventListener('click', function () {
+    function clearError() {
+        errorBox.textContent = '';
         errorBox.classList.add('d-none');
-        button.disabled = true;
+    }
 
-        /*
-         * The checkout integration that embeds this component must provide
-         * the current order total in window.ohbonoWalletOrderTotal.
-         */
-        const total = Number(window.ohbonoWalletOrderTotal || 0);
+    function updateState(data) {
+        document.getElementById('ohbono-wallet-balance').textContent =
+            data.balance ?? '--';
 
-        fetch(box.dataset.applyUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body: 'total=' + encodeURIComponent(total)
+        document.getElementById('ohbono-wallet-available').textContent =
+            data.available ?? '--';
+
+        document.getElementById('ohbono-wallet-applied').textContent =
+            data.applied ?? data.amount ?? '--';
+
+        document.getElementById('ohbono-wallet-remaining').textContent =
+            data.remaining ?? '--';
+
+        const applied = Number(data.applied ?? data.amount ?? 0);
+
+        if (applied > 0) {
+            applyButton.classList.add('d-none');
+            removeButton.classList.remove('d-none');
+        } else {
+            applyButton.classList.remove('d-none');
+            removeButton.classList.add('d-none');
+        }
+    }
+
+    function refresh() {
+        clearError();
+
+        fetch(box.dataset.cleanupUrl, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(() => {
+            return fetch('{{ wallet_url }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type':
+                        'application/x-www-form-urlencoded'
+                },
+                body: 'total=' +
+                    encodeURIComponent(total())
+            });
         })
         .then(response => response.json())
         .then(data => {
@@ -76,21 +132,95 @@
                 return;
             }
 
-            document.getElementById('ohbono-wallet-remaining').textContent =
-                data.remaining;
+            updateState(data);
+        })
+        .catch(function () {
+            showError('Unable to refresh wallet information.');
+        });
+    }
+
+    applyButton.addEventListener('click', function () {
+        clearError();
+        applyButton.disabled = true;
+
+        fetch(box.dataset.confirmUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type':
+                    'application/x-www-form-urlencoded'
+            },
+            body: 'total=' +
+                encodeURIComponent(total())
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                showError(data.error);
+                return;
+            }
+
+            updateState({
+                balance: data.balance,
+                available: data.available,
+                applied: data.amount,
+                remaining: data.remaining
+            });
 
             document.dispatchEvent(
-                new CustomEvent('ohbonoWalletApplied', {
-                    detail: data
-                })
+                new CustomEvent(
+                    'ohbonoWalletPaymentConfirmed',
+                    { detail: data }
+                )
             );
         })
         .catch(function () {
             showError('Unable to apply wallet payment.');
         })
         .finally(function () {
-            button.disabled = false;
+            applyButton.disabled = false;
         });
     });
+
+    removeButton.addEventListener('click', function () {
+        clearError();
+        removeButton.disabled = true;
+
+        fetch(box.dataset.removeUrl, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                showError(data.error);
+                return;
+            }
+
+            refresh();
+
+            document.dispatchEvent(
+                new CustomEvent(
+                    'ohbonoWalletPaymentRemoved',
+                    { detail: data }
+                )
+            );
+        })
+        .catch(function () {
+            showError('Unable to remove wallet payment.');
+        })
+        .finally(function () {
+            removeButton.disabled = false;
+        });
+    });
+
+    /*
+     * Journal and custom checkout layouts can call this function whenever
+     * totals change after shipping, coupon or tax recalculation.
+     */
+    window.ohbonoWalletRefresh = refresh;
+
+    /*
+     * Initial stale-session cleanup and quote refresh.
+     */
+    refresh();
 })();
 </script>

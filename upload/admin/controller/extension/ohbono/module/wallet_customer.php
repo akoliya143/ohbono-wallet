@@ -3,99 +3,83 @@ namespace Opencart\Admin\Controller\Extension\Ohbono\Module;
 
 class WalletCustomer extends \Opencart\System\Engine\Controller
 {
-    public function credit(): void
+    public function index(): void
     {
-        $this->processAdjustment('credit');
-    }
+        $this->load->language('extension/ohbono/module/wallet_customer');
 
-    public function debit(): void
-    {
-        $this->processAdjustment('debit');
-    }
-
-    private function processAdjustment(string $direction): void
-    {
         if (!$this->user->hasPermission(
-            'modify',
+            'access',
             'extension/ohbono/module/wallet_customer'
         )) {
-            $this->json([
-                'success' => false,
-                'error' => 'Permission denied.'
-            ]);
+            $this->response->setOutput(
+                $this->language->get('error_permission')
+            );
             return;
         }
 
         $customer_id = (int)($this->request->get['customer_id'] ?? 0);
-        $amount = round((float)($this->request->post['amount'] ?? 0), 4);
-        $reference = trim((string)($this->request->post['reference'] ?? ''));
-        $comment = trim((string)($this->request->post['comment'] ?? ''));
-        $reason = trim((string)($this->request->post['reason'] ?? ''));
 
-        if ($customer_id <= 0 || $amount <= 0) {
-            $this->json([
-                'success' => false,
-                'error' => 'Customer and a positive amount are required.'
-            ]);
-            return;
-        }
+        $data = [];
 
-        if ($amount > 100000000) {
-            $this->json([
-                'success' => false,
-                'error' => 'The amount is above the permitted limit.'
-            ]);
-            return;
-        }
+        $data['heading_title'] =
+            $this->language->get('heading_title');
+        $data['entry_customer'] =
+            $this->language->get('entry_customer');
+        $data['button_search'] =
+            $this->language->get('button_search');
+        $data['button_adjust'] =
+            $this->language->get('button_adjust');
+        $data['text_balance'] =
+            $this->language->get('text_balance');
+        $data['text_status'] =
+            $this->language->get('text_status');
+        $data['text_active'] =
+            $this->language->get('text_active');
+        $data['text_disabled'] =
+            $this->language->get('text_disabled');
+        $data['text_transactions'] =
+            $this->language->get('text_transactions');
+        $data['text_no_transactions'] =
+            $this->language->get('text_no_transactions');
 
-        if ($reason === '') {
-            $this->json([
-                'success' => false,
-                'error' => 'A correction reason is required.'
-            ]);
-            return;
-        }
-
-        if (mb_strlen($reason) > 500) {
-            $this->json([
-                'success' => false,
-                'error' => 'The correction reason is too long.'
-            ]);
-            return;
-        }
+        $data['customer_id'] = $customer_id;
+        $data['customer'] = null;
+        $data['transactions'] = [];
 
         $this->load->model('extension/ohbono/module/wallet_customer');
 
-        try {
-            $result = $this->model_extension_ohbono_module_wallet_customer
-                ->adjust(
-                    $customer_id,
-                    $direction,
-                    $amount,
-                    $reference,
-                    $comment,
-                    $reason,
-                    (int)$this->user->getId()
-                );
+        if ($customer_id > 0) {
+            $data['customer'] =
+                $this->model_extension_ohbono_module_wallet_customer
+                    ->getWallet($customer_id);
 
-            $this->json([
-                'success' => true,
-                'transaction_id' => $result['transaction_id'],
-                'balance_before' => $result['balance_before'],
-                'balance' => $result['balance'],
-                'reason' => $reason
-            ]);
-        } catch (\Throwable $e) {
-            $this->json([
-                'success' => false,
-                'error' => $e->getMessage()
-            ]);
+            $data['transactions'] =
+                $this->model_extension_ohbono_module_wallet_customer
+                    ->getTransactions($customer_id, 0, 50);
         }
-    }
 
-    private function json(array $data): void
-    {
-        $this->response->addHeader('Content-Type: application/json');
-        $this->response->setOutput(json_encode($data));
+        $data['adjust_url'] = $this->url->link(
+            'extension/ohbono/module/wallet_adjustment',
+            'user_token=' . $this->session->data['user_token']
+        );
+
+        $data['search_url'] = $this->url->link(
+            'extension/ohbono/module/wallet_customer',
+            'user_token=' . $this->session->data['user_token']
+        );
+
+        $data['header'] =
+            $this->load->controller('common/header');
+        $data['column_left'] =
+            $this->load->controller('common/column_left');
+        $data['footer'] =
+            $this->load->controller('common/footer');
+
+        $this->response->setOutput(
+            $this->load->view(
+                'extension/ohbono/module/wallet_customer',
+                $data
+            )
+        );
     }
 }

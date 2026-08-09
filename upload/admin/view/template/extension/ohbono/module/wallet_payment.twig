@@ -1,0 +1,49 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                {{ heading_title }}
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="small text-muted">{{ text_status }}</div>
+
+                        {% if status %}
+                            <span class="badge bg-success">
+                                {{ text_enabled }}
+                            </span>
+                        {% else %}
+                            <span class="badge bg-secondary">
+                                {{ text_disabled }}
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="small text-muted">Sort Order</div>
+                        <strong>{{ sort_order }}</strong>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="small text-muted">
+                            Maximum Wallet Use
+                        </div>
+                        <strong>{{ maximum_use }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}

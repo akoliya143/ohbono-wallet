@@ -1,0 +1,13 @@
+{#
+    Journal/custom-checkout helper.
+
+    Call window.ohbonoWalletRefresh() after shipping, coupon, tax or cart
+    totals are recalculated.
+#}
+<script>
+document.addEventListener('ohbonoCheckoutTotalsChanged', function () {
+    if (typeof window.ohbonoWalletRefresh === 'function') {
+        window.ohbonoWalletRefresh();
+    }
+});
+</script>

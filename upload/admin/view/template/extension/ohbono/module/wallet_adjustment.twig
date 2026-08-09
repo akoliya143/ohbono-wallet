@@ -1,0 +1,131 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div id="ohbono-adjustment-error"
+             class="alert alert-danger d-none"></div>
+
+        <div id="ohbono-adjustment-success"
+             class="alert alert-success d-none"></div>
+
+        <div class="card">
+            <div class="card-header">
+                {{ heading_title }}
+            </div>
+
+            <div class="card-body">
+                <form id="ohbono-wallet-adjustment-form"
+                      action="{{ action }}"
+                      method="post">
+
+                    <input type="hidden"
+                           name="customer_id"
+                           value="{{ customer_id }}">
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_amount }}
+                        </label>
+
+                        <div class="col-sm-9">
+                            <input type="number"
+                                   name="amount"
+                                   value=""
+                                   step="0.0001"
+                                   class="form-control"
+                                   required>
+
+                            <div class="form-text">
+                                {{ help_amount }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_reason }}
+                        </label>
+
+                        <div class="col-sm-9">
+                            <textarea name="reason"
+                                      rows="4"
+                                      class="form-control"
+                                      required></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ back }}"
+                           class="btn btn-outline-secondary">
+                            {{ button_back }}
+                        </a>
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            {{ button_submit }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const form =
+        document.getElementById(
+            'ohbono-wallet-adjustment-form'
+        );
+
+    const errorBox =
+        document.getElementById(
+            'ohbono-adjustment-error'
+        );
+
+    const successBox =
+        document.getElementById(
+            'ohbono-adjustment-success'
+        );
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        errorBox.classList.add('d-none');
+        successBox.classList.add('d-none');
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                errorBox.textContent = data.error || 'Adjustment failed.';
+                errorBox.classList.remove('d-none');
+                return;
+            }
+
+            successBox.textContent =
+                'Wallet adjustment completed. Transaction #' +
+                data.transaction_id;
+
+            successBox.classList.remove('d-none');
+            form.reset();
+        })
+        .catch(function () {
+            errorBox.textContent =
+                'Unable to process the wallet adjustment.';
+            errorBox.classList.remove('d-none');
+        });
+    });
+})();
+</script>
+
+{{ footer }}
