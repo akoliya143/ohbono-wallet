@@ -49,14 +49,16 @@ class Wallet extends \Opencart\System\Engine\Model
         }
 
         $query = $this->db->query(
-            "SELECT `balance`
+            "SELECT balance
              FROM `" . DB_PREFIX . "wallet`
-             WHERE `customer_id` = '" . (int)$customer_id . "'
-             AND `status` = '1'
+             WHERE customer_id = '" . (int)$customer_id . "'
+             AND status = '1'
              LIMIT 1"
         );
 
-        return $query->num_rows ? round((float)$query->row['balance'], 4) : 0.0;
+        return $query->num_rows
+            ? round((float)$query->row['balance'], 4)
+            : 0.0;
     }
 
     public function getSessionWalletUse(): float
@@ -67,13 +69,19 @@ class Wallet extends \Opencart\System\Engine\Model
         ), 4);
     }
 
-    public function calculateAllowedWalletUse(float $requested, float $order_total): float
-    {
-        if (!$this->customer->isLogged() || $requested <= 0 || $order_total <= 0) {
+    public function calculateAllowedWalletUse(
+        float $requested,
+        float $order_total
+    ): float {
+        if (!$this->customer->isLogged() ||
+            $requested <= 0 ||
+            $order_total <= 0) {
             return 0.0;
         }
 
-        $balance = $this->getAvailableBalance((int)$this->customer->getId());
+        $balance = $this->getAvailableBalance(
+            (int)$this->customer->getId()
+        );
 
         $allowed = min(
             round($requested, 4),
@@ -104,13 +112,21 @@ class Wallet extends \Opencart\System\Engine\Model
         $taxes = [];
         $total = 0.0;
 
-        $this->model_checkout_cart->getTotals($totals, $taxes, $total);
+        $this->model_checkout_cart->getTotals(
+            $totals,
+            $taxes,
+            $total
+        );
 
         return round(max(0, $total), 4);
     }
 
     public function clearSessionWallet(): void
     {
-        unset($this->session->data['ohbono_wallet_use']);
+        unset(
+            $this->session->data['ohbono_wallet_use'],
+            $this->session->data['ohbono_wallet_order_id'],
+            $this->session->data['ohbono_wallet_finalized']
+        );
     }
 }

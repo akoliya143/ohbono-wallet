@@ -6,7 +6,6 @@ class Wallet extends \Opencart\System\Engine\Controller
     public function index(): string
     {
         $this->load->language('extension/ohbono/payment/wallet');
-
         $this->load->model('extension/ohbono/total/wallet');
 
         $data['name'] = 'wallet';
@@ -74,16 +73,16 @@ class Wallet extends \Opencart\System\Engine\Controller
     }
 
     /**
-     * Used by a payment integration after the order has been created.
+     * Finalize wallet debit after OpenCart has created the order.
      *
-     * The order must already exist. The amount is revalidated against the
-     * database wallet balance by the central service.
+     * This method is intentionally not called from Apply Wallet.
      */
     public function finalize(int $order_id, int $customer_id, float $amount): array
     {
         if ($order_id <= 0 || $customer_id <= 0 || $amount <= 0) {
             return [
                 'success' => false,
+                'status' => 'invalid',
                 'error' => 'Invalid wallet payment parameters.'
             ];
         }
@@ -99,14 +98,31 @@ class Wallet extends \Opencart\System\Engine\Controller
 
             return [
                 'success' => true,
+                'status' => 'debited',
                 'transaction_id' => $transaction_id
             ];
         } catch (\Throwable $e) {
             return [
                 'success' => false,
+                'status' => 'failed',
                 'error' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Clear only the wallet checkout session values.
+     *
+     * This must be called after successful order finalization or when the
+     * checkout is intentionally cancelled/reset.
+     */
+    public function clearCheckoutSession(): void
+    {
+        unset(
+            $this->session->data['ohbono_wallet_use'],
+            $this->session->data['ohbono_wallet_order_id'],
+            $this->session->data['ohbono_wallet_finalized']
+        );
     }
 
     private function json(array $data): void

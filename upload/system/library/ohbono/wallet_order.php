@@ -1,11 +1,10 @@
 <?php
 /**
- * OHBONO Wallet order orchestration helper.
+ * OHBONO Wallet order orchestration.
  *
- * This helper is deliberately separate from checkout presentation.
- * It should be called only after OpenCart has created an order.
+ * This class is intended to be called after an OpenCart order has been
+ * created and before the order/payment workflow is considered complete.
  */
-
 class OhbonoWalletOrder
 {
     private $registry;
@@ -15,15 +14,16 @@ class OhbonoWalletOrder
     {
         $this->registry = $registry;
 
-        if (!$registry->has('load')) {
-            throw new RuntimeException('OpenCart loader is unavailable.');
-        }
-
         $registry->get('load')->library('ohbono/wallet_service');
 
         $this->service = $registry->get('wallet_service');
     }
 
+    /**
+     * Finalize wallet payment for an already-created order.
+     *
+     * Idempotency is provided by wallet_order.order_id.
+     */
     public function process(
         int $order_id,
         int $customer_id,
@@ -51,12 +51,70 @@ class OhbonoWalletOrder
                 'status' => 'debited',
                 'transaction_id' => $transaction_id
             ];
-        } catch (Throwable $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'status' => 'failed',
                 'message' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Process the wallet portion using the value stored in the checkout
+     * session, then clear the session after successful finalization.
+     */
+    public function processFromSession(
+        int $order_id,
+        int $customer_id,
+        float $final_order_total = 0.0
+    ): array {
+        $wallet_amount = round(
+            (float)($this->registry->get('session')->data['ohbono_wallet_use'] ?? 0),
+            4
+        );
+
+        if ($wallet_amount <= 0) {
+            return [
+                'success' => true,
+                'status' => 'not_used',
+                'wallet_amount' => 0.0,
+                'transaction_id' => 0
+            ];
+        }
+
+        /*
+         * Never allow the session amount to exceed the final order total.
+         * The wallet service performs the final balance check.
+         */
+        if ($final_order_total > 0) {
+            $wallet_amount = min($wallet_amount, round($final_order_total, 4));
+        }
+
+        $result = $this->process(
+            $order_id,
+            $customer_id,
+            $wallet_amount
+        );
+
+        if ($result['success']) {
+            $this->registry->get('session')->data['ohbono_wallet_finalized'] = 1;
+            $this->registry->get('session')->data['ohbono_wallet_order_id'] = $order_id;
+
+            unset($this->registry->get('session')->data['ohbono_wallet_use']);
+
+            $result['wallet_amount'] = $wallet_amount;
+        }
+
+        return $result;
+    }
+
+    public function clearSession(): void
+    {
+        unset(
+            $this->registry->get('session')->data['ohbono_wallet_use'],
+            $this->registry->get('session')->data['ohbono_wallet_order_id'],
+            $this->registry->get('session')->data['ohbono_wallet_finalized']
+        );
     }
 }
