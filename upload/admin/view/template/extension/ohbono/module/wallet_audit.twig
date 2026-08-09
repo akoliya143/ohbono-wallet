@@ -1,0 +1,188 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="float-end">
+                <a href="{{ export }}" class="btn btn-success">
+                    <i class="fa-solid fa-file-csv"></i>
+                    {{ button_export }}
+                </a>
+            </div>
+
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="card mb-3">
+            <div class="card-body">
+                <form action="{{ action }}" method="get">
+                    <input type="hidden"
+                           name="user_token"
+                           value="{{ user_token }}">
+
+                    <div class="row g-3">
+                        <div class="col-md-2">
+                            <label class="form-label">
+                                {{ entry_customer_id }}
+                            </label>
+                            <input type="number"
+                                   name="filter_customer_id"
+                                   value="{{ filters.customer_id }}"
+                                   class="form-control"
+                                   min="1">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">
+                                {{ entry_admin_id }}
+                            </label>
+                            <input type="number"
+                                   name="filter_admin_id"
+                                   value="{{ filters.admin_id }}"
+                                   class="form-control"
+                                   min="1">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">
+                                {{ entry_action }}
+                            </label>
+                            <select name="filter_action"
+                                    class="form-select">
+                                <option value="">All</option>
+                                <option value="admin_credit"
+                                    {% if filters.action == 'admin_credit' %}selected{% endif %}>
+                                    {{ text_credit }}
+                                </option>
+                                <option value="admin_debit"
+                                    {% if filters.action == 'admin_debit' %}selected{% endif %}>
+                                    {{ text_debit }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">
+                                {{ entry_date_start }}
+                            </label>
+                            <input type="date"
+                                   name="filter_date_start"
+                                   value="{{ filters.date_start }}"
+                                   class="form-control">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">
+                                {{ entry_date_end }}
+                            </label>
+                            <input type="date"
+                                   name="filter_date_end"
+                                   value="{{ filters.date_end }}"
+                                   class="form-control">
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-filter"></i>
+                                {{ button_filter }}
+                            </button>
+
+                            <a href="{{ reset }}" class="btn btn-light">
+                                {{ button_reset }}
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-file-shield"></i>
+                {{ text_list }}
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>{{ column_date }}</th>
+                                <th>{{ column_customer }}</th>
+                                <th>{{ column_admin }}</th>
+                                <th>{{ column_action }}</th>
+                                <th class="text-end">{{ column_amount }}</th>
+                                <th class="text-end">{{ column_before }}</th>
+                                <th class="text-end">{{ column_after }}</th>
+                                <th>{{ column_reference }}</th>
+                                <th>{{ column_reason }}</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for audit in audits %}
+                                <tr>
+                                    <td>#{{ audit.audit_id }}</td>
+                                    <td class="text-nowrap">
+                                        {{ audit.date }}
+                                    </td>
+                                    <td>#{{ audit.customer_id }}</td>
+                                    <td>
+                                        #{{ audit.admin_id }}
+                                        {% if audit.admin_name %}
+                                            <div class="small text-muted">
+                                                {{ audit.admin_name }}
+                                            </div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if audit.direction == 'credit' %}
+                                            <span class="badge bg-success">
+                                                {{ text_credit }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                {{ text_debit }}
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        {{ audit.amount }}
+                                    </td>
+                                    <td class="text-end">
+                                        {{ audit.before }}
+                                    </td>
+                                    <td class="text-end">
+                                        {{ audit.after }}
+                                    </td>
+                                    <td>{{ audit.reference ?: '-' }}</td>
+                                    <td style="min-width: 260px;">
+                                        {{ audit.reason }}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="10"
+                                        class="text-center py-5">
+                                        {{ text_no_results }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% if pagination %}
+                <div class="card-footer">
+                    {{ pagination }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{{ footer }}

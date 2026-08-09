@@ -1,0 +1,129 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="card mb-3">
+            <div class="card-body">
+                <form action="{{ action }}" method="get">
+                    <input type="hidden"
+                           name="user_token"
+                           value="{{ user_token }}">
+
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">{{ entry_order_id }}</label>
+                            <input type="number"
+                                   name="filter_order_id"
+                                   value="{{ filters.order_id }}"
+                                   class="form-control"
+                                   min="1">
+                        </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label">{{ entry_customer_id }}</label>
+                            <input type="number"
+                                   name="filter_customer_id"
+                                   value="{{ filters.customer_id }}"
+                                   class="form-control"
+                                   min="1">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">{{ entry_date_start }}</label>
+                            <input type="date"
+                                   name="filter_date_start"
+                                   value="{{ filters.date_start }}"
+                                   class="form-control">
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label">{{ entry_date_end }}</label>
+                            <input type="date"
+                                   name="filter_date_end"
+                                   value="{{ filters.date_end }}"
+                                   class="form-control">
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa-solid fa-filter"></i>
+                                {{ button_filter }}
+                            </button>
+
+                            <a href="{{ reset }}"
+                               class="btn btn-light">
+                                {{ button_reset }}
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-rotate-left"></i>
+                {{ text_list }}
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>{{ column_date }}</th>
+                                <th>{{ column_order }}</th>
+                                <th>{{ column_customer }}</th>
+                                <th>{{ column_amount }}</th>
+                                <th>{{ column_transaction }}</th>
+                                <th>{{ column_reference }}</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for refund in refunds %}
+                                <tr>
+                                    <td>#{{ refund.wallet_order_id }}</td>
+                                    <td>{{ refund.date }}</td>
+                                    <td>#{{ refund.order_id }}</td>
+                                    <td>
+                                        #{{ refund.customer_id }}
+                                        <div class="small text-muted">
+                                            {{ refund.customer }}<br>
+                                            {{ refund.email }}
+                                        </div>
+                                    </td>
+                                    <td>{{ refund.amount }}</td>
+                                    <td>#{{ refund.transaction_id }}</td>
+                                    <td>{{ refund.reference }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="7"
+                                        class="text-center py-5">
+                                        {{ text_no_results }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% if pagination %}
+                <div class="card-footer">
+                    {{ pagination }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{{ footer }}
