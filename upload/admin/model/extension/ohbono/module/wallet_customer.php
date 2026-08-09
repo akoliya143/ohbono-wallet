@@ -1,13 +1,18 @@
 <?php
 namespace Opencart\Admin\Model\Extension\Ohbono\Module;
 
+use Opencart\System\Library\Ohbono\WalletFactory;
+use Opencart\System\Library\Ohbono\WalletTransaction;
+use RuntimeException;
+
 class WalletCustomer extends \Opencart\System\Engine\Model
 {
     public function getWallets(array $data = []): array
     {
         $sql = "SELECT w.*, c.firstname, c.lastname, c.email
                 FROM `" . DB_PREFIX . "wallet` w
-                LEFT JOIN `" . DB_PREFIX . "customer` c ON (c.customer_id = w.customer_id)
+                INNER JOIN `" . DB_PREFIX . "customer` c
+                    ON (c.customer_id = w.customer_id)
                 WHERE 1";
 
         if (!empty($data['filter_customer'])) {
@@ -20,14 +25,10 @@ class WalletCustomer extends \Opencart\System\Engine\Model
             )";
         }
 
-        if (isset($data['filter_status']) && (int)$data['filter_status'] !== -1) {
-            $sql .= " AND w.status = '" . (int)$data['filter_status'] . "'";
-        }
-
-        $sql .= " ORDER BY w.wallet_id DESC";
+        $sql .= " ORDER BY c.firstname, c.lastname";
 
         $start = max(0, (int)($data['start'] ?? 0));
-        $limit = max(1, min(100, (int)($data['limit'] ?? 20)));
+        $limit = max(1, min(100, (int)($data['limit'] ?? 25)));
 
         $sql .= " LIMIT " . $start . ", " . $limit;
 
@@ -38,7 +39,8 @@ class WalletCustomer extends \Opencart\System\Engine\Model
     {
         $sql = "SELECT COUNT(*) AS total
                 FROM `" . DB_PREFIX . "wallet` w
-                LEFT JOIN `" . DB_PREFIX . "customer` c ON (c.customer_id = w.customer_id)
+                INNER JOIN `" . DB_PREFIX . "customer` c
+                    ON (c.customer_id = w.customer_id)
                 WHERE 1";
 
         if (!empty($data['filter_customer'])) {
@@ -51,48 +53,80 @@ class WalletCustomer extends \Opencart\System\Engine\Model
             )";
         }
 
-        if (isset($data['filter_status']) && (int)$data['filter_status'] !== -1) {
-            $sql .= " AND w.status = '" . (int)$data['filter_status'] . "'";
-        }
-
         return (int)$this->db->query($sql)->row['total'];
-    }
-
-    public function getCustomer(int $customer_id): array
-    {
-        $query = $this->db->query(
-            "SELECT `customer_id`, `firstname`, `lastname`, `email`
-             FROM `" . DB_PREFIX . "customer`
-             WHERE `customer_id` = '" . (int)$customer_id . "'
-             LIMIT 1"
-        );
-
-        return $query->num_rows ? $query->row : [];
     }
 
     public function getWallet(int $customer_id): array
     {
         $query = $this->db->query(
-            "SELECT *
-             FROM `" . DB_PREFIX . "wallet`
-             WHERE `customer_id` = '" . (int)$customer_id . "'
+            "SELECT w.*, c.firstname, c.lastname, c.email
+             FROM `" . DB_PREFIX . "wallet` w
+             INNER JOIN `" . DB_PREFIX . "customer` c
+                ON (c.customer_id = w.customer_id)
+             WHERE w.customer_id = '" . (int)$customer_id . "'
              LIMIT 1"
         );
 
         return $query->num_rows ? $query->row : [];
     }
 
-    public function getTransactions(int $customer_id, int $start = 0, int $limit = 50): array
+    public function getTransactions(int $customer_id, int $limit = 50): array
     {
-        $start = max(0, $start);
         $limit = max(1, min(100, $limit));
 
-        return $this->db->query(
+        $query = $this->db->query(
             "SELECT *
              FROM `" . DB_PREFIX . "wallet_transaction`
-             WHERE `customer_id` = '" . (int)$customer_id . "'
-             ORDER BY `transaction_id` DESC
-             LIMIT " . $start . ", " . $limit
-        )->rows;
+             WHERE customer_id = '" . (int)$customer_id . "'
+             ORDER BY transaction_id DESC
+             LIMIT " . $limit
+        );
+
+        return $query->rows;
+    }
+
+    public function adjust(
+        int $customer_id,
+        string $direction,
+        float $amount,
+        string $reference,
+        string $comment
+    ): int {
+        if ($customer_id <= 0 || $amount <= 0) {
+            throw new RuntimeException('Invalid wallet adjustment.');
+        }
+
+        $factory = new WalletFactory($this->registry);
+        $service = $factory->service();
+
+        if (!$service->isEnabled()) {
+            throw new RuntimeException('Wallet is disabled.');
+        }
+
+        if ($direction === 'credit') {
+            return $service->credit(
+                $customer_id,
+                $amount,
+                WalletTransaction::TYPE_ADMIN_CREDIT,
+                $comment !== '' ? $comment : 'Admin wallet credit',
+                $reference,
+                0,
+                (int)$this->user->getId()
+            );
+        }
+
+        if ($direction === 'debit') {
+            return $service->debit(
+                $customer_id,
+                $amount,
+                WalletTransaction::TYPE_ADMIN_DEBIT,
+                $comment !== '' ? $comment : 'Admin wallet debit',
+                $reference,
+                0,
+                (int)$this->user->getId()
+            );
+        }
+
+        throw new RuntimeException('Invalid wallet adjustment direction.');
     }
 }
