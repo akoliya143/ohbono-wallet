@@ -1,0 +1,102 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="float-end">
+                <a href="{{ back }}" class="btn btn-light">
+                    <i class="fa-solid fa-reply"></i> {{ button_back }}
+                </a>
+            </div>
+
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-receipt"></i> {{ text_details }}
+            </div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <strong>{{ label_transaction_id }}</strong>
+                        <div>{{ transaction.transaction_id }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_date }}</strong>
+                        <div>{{ transaction.date }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_customer }}</strong>
+                        <div>{{ transaction.customer }}</div>
+                        <div class="small text-muted">ID: {{ transaction.customer_id }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_type }}</strong>
+                        <div>{{ transaction.type }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_direction }}</strong>
+                        <div>
+                            {% if transaction.direction == 'credit' %}
+                                <span class="badge bg-success">{{ text_credit }}</span>
+                            {% else %}
+                                <span class="badge bg-danger">{{ text_debit }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_amount }}</strong>
+                        <div class="fw-bold">{{ transaction.amount }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_before }}</strong>
+                        <div>{{ transaction.before }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_after }}</strong>
+                        <div>{{ transaction.after }}</div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <strong>{{ label_order }}</strong>
+                        <div>
+                            {% if transaction.order_id %}
+                                #{{ transaction.order_id }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <strong>{{ label_reference }}</strong>
+                        <div>{{ transaction.reference ?: '-' }}</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <strong>{{ label_admin }}</strong>
+                        <div>{{ transaction.admin_user_id ?: '-' }}</div>
+                    </div>
+
+                    <div class="col-12">
+                        <strong>{{ label_comment }}</strong>
+                        <div>{{ transaction.comment ?: '-' }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}

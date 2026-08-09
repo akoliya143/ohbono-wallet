@@ -5,13 +5,14 @@ class WalletTransaction extends \Opencart\System\Engine\Model
 {
     public function getTransactions(array $data = []): array
     {
-        $sql = "SELECT wt.*, c.firstname, c.lastname, c.email
+        $sql = "SELECT wt.*, c.firstname, c.lastname
                 FROM `" . DB_PREFIX . "wallet_transaction` wt
                 LEFT JOIN `" . DB_PREFIX . "customer` c
                     ON (c.customer_id = wt.customer_id)
                 WHERE 1";
 
         $sql .= $this->buildWhere($data);
+
         $sql .= " ORDER BY wt.transaction_id DESC";
 
         $start = max(0, (int)($data['start'] ?? 0));
@@ -35,42 +36,56 @@ class WalletTransaction extends \Opencart\System\Engine\Model
         return (int)$this->db->query($sql)->row['total'];
     }
 
+    public function getTransaction(int $transaction_id): array
+    {
+        $query = $this->db->query(
+            "SELECT wt.*, c.firstname, c.lastname, c.email
+             FROM `" . DB_PREFIX . "wallet_transaction` wt
+             LEFT JOIN `" . DB_PREFIX . "customer` c
+                ON (c.customer_id = wt.customer_id)
+             WHERE wt.transaction_id = '" . (int)$transaction_id . "'
+             LIMIT 1"
+        );
+
+        return $query->num_rows ? $query->row : [];
+    }
+
     private function buildWhere(array $data): string
     {
-        $sql = '';
+        $where = '';
 
         if (!empty($data['filter_customer'])) {
             $filter = $this->db->escape($data['filter_customer']);
 
-            $sql .= " AND (
+            $where .= " AND (
                 CONCAT(c.firstname, ' ', c.lastname) LIKE '%" . $filter . "%'
                 OR c.email LIKE '%" . $filter . "%'
-                OR c.customer_id = '" . (int)$data['filter_customer'] . "'
+                OR wt.customer_id = '" . (int)$data['filter_customer'] . "'
             )";
         }
 
         if (!empty($data['filter_type'])) {
-            $sql .= " AND wt.type = '" . $this->db->escape($data['filter_type']) . "'";
+            $where .= " AND wt.type = '" . $this->db->escape($data['filter_type']) . "'";
         }
 
         if (in_array($data['filter_direction'] ?? '', ['credit', 'debit'], true)) {
-            $sql .= " AND wt.direction = '" . $this->db->escape($data['filter_direction']) . "'";
+            $where .= " AND wt.direction = '" . $this->db->escape($data['filter_direction']) . "'";
         }
 
         if (!empty($data['filter_order_id'])) {
-            $sql .= " AND wt.order_id = '" . (int)$data['filter_order_id'] . "'";
+            $where .= " AND wt.order_id = '" . (int)$data['filter_order_id'] . "'";
         }
 
         if (!empty($data['filter_date_start'])) {
             $date = $this->db->escape($data['filter_date_start']);
-            $sql .= " AND DATE(wt.date_added) >= '" . $date . "'";
+            $where .= " AND wt.date_added >= '" . $date . " 00:00:00'";
         }
 
         if (!empty($data['filter_date_end'])) {
             $date = $this->db->escape($data['filter_date_end']);
-            $sql .= " AND DATE(wt.date_added) <= '" . $date . "'";
+            $where .= " AND wt.date_added <= '" . $date . " 23:59:59'";
         }
 
-        return $sql;
+        return $where;
     }
 }
