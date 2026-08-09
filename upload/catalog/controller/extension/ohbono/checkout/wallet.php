@@ -3,51 +3,132 @@ namespace Opencart\Catalog\Controller\Extension\Ohbono\Checkout;
 
 class Wallet extends \Opencart\System\Engine\Controller
 {
-    /**
-     * Returns the wallet amount attached to an order.
-     *
-     * This endpoint is informational and does not perform a debit/refund.
-     */
-    public function order(): void
+    public function apply(): void
     {
-        $order_id = (int)($this->request->get['order_id'] ?? 0);
+        if (!$this->customer->isLogged()) {
+            $this->json([
+                'success' => false,
+                'error' => 'Please login to use your wallet.'
+            ]);
+            return;
+        }
 
-        if ($order_id <= 0 || !$this->customer->isLogged()) {
+        if (!(int)$this->config->get('ohbono_wallet_status') ||
+            !(int)$this->config->get('ohbono_wallet_allow_checkout')) {
+            $this->json([
+                'success' => false,
+                'error' => 'Wallet payment is currently unavailable.'
+            ]);
+            return;
+        }
+
+        $requested = round((float)($this->request->post['amount'] ?? 0), 4);
+
+        if ($requested <= 0) {
+            $this->json([
+                'success' => false,
+                'error' => 'Please enter a valid wallet amount.'
+            ]);
+            return;
+        }
+
+        $this->load->model('extension/ohbono/total/wallet');
+
+        $cart_total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
+
+        if ($cart_total <= 0) {
+            $this->json([
+                'success' => false,
+                'error' => 'There is no payable amount in your cart.'
+            ]);
+            return;
+        }
+
+        $allowed = $this->model_extension_ohbono_total_wallet->calculateAllowedWalletUse(
+            $requested,
+            $cart_total
+        );
+
+        if ($allowed <= 0) {
+            $balance = $this->model_extension_ohbono_total_wallet->getAvailableBalance(
+                (int)$this->customer->getId()
+            );
+
+            $this->json([
+                'success' => false,
+                'error' => 'The requested wallet amount cannot be applied.',
+                'balance' => $balance
+            ]);
+            return;
+        }
+
+        $this->session->data['ohbono_wallet_use'] = $allowed;
+
+        $this->json([
+            'success' => true,
+            'wallet_used' => $allowed,
+            'wallet_balance' => $this->model_extension_ohbono_total_wallet->getAvailableBalance(
+                (int)$this->customer->getId()
+            ),
+            'cart_total' => $cart_total,
+            'remaining' => round(max(0, $cart_total - $allowed), 4),
+            'message' => 'Wallet amount applied successfully.'
+        ]);
+    }
+
+    public function remove(): void
+    {
+        unset($this->session->data['ohbono_wallet_use']);
+
+        $this->json([
+            'success' => true,
+            'wallet_used' => 0,
+            'message' => 'Wallet amount removed.'
+        ]);
+    }
+
+    public function info(): void
+    {
+        if (!$this->customer->isLogged()) {
             $this->json([
                 'success' => false
             ]);
             return;
         }
 
-        $query = $this->db->query(
-            "SELECT wo.amount, wo.status
-             FROM `" . DB_PREFIX . "wallet_order` wo
-             INNER JOIN `" . DB_PREFIX . "order` o
-                ON (o.order_id = wo.order_id)
-             WHERE wo.order_id = '" . (int)$order_id . "'
-             AND o.customer_id = '" . (int)$this->customer->getId() . "'
-             LIMIT 1"
+        $this->load->model('extension/ohbono/total/wallet');
+
+        $cart_total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
+        $balance = $this->model_extension_ohbono_total_wallet->getAvailableBalance(
+            (int)$this->customer->getId()
+        );
+        $used = $this->model_extension_ohbono_total_wallet->getSessionWalletUse();
+
+        $allowed = $this->model_extension_ohbono_total_wallet->calculateAllowedWalletUse(
+            $used,
+            $cart_total
         );
 
-        if (!$query->num_rows) {
-            $this->json([
-                'success' => true,
-                'wallet_amount' => 0.0,
-                'status' => 0
-            ]);
-            return;
+        if ($allowed != $used) {
+            if ($allowed > 0) {
+                $this->session->data['ohbono_wallet_use'] = $allowed;
+            } else {
+                unset($this->session->data['ohbono_wallet_use']);
+            }
         }
 
         $this->json([
             'success' => true,
-            'wallet_amount' => round((float)$query->row['amount'], 4),
-            'status' => (int)$query->row['status']
+            'balance' => $balance,
+            'wallet_used' => $allowed,
+            'cart_total' => $cart_total,
+            'remaining' => round(max(0, $cart_total - $allowed), 4)
         ]);
     }
 
-    private function json(array $output): void
+    private function json(array $data): void
     {
         $this->response->addHeader('Content-Type: application/json');
-        $this->response->setOutput(json_encode($output));
+        $this->response->setOutput(json_encode($data));
     }
 }

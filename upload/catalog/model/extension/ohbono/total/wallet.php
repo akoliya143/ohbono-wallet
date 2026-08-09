@@ -14,28 +14,32 @@ class Wallet extends \Opencart\System\Engine\Model
             return;
         }
 
-        $wallet_use = $this->getSessionWalletUse();
+        $requested = $this->getSessionWalletUse();
 
-        if ($wallet_use <= 0) {
+        if ($requested <= 0 || $total <= 0) {
             return;
         }
 
-        $wallet_use = $this->calculateAllowedWalletUse($wallet_use, $total);
+        $allowed = $this->calculateAllowedWalletUse($requested, $total);
 
-        if ($wallet_use <= 0) {
+        if ($allowed <= 0) {
             unset($this->session->data['ohbono_wallet_use']);
             return;
+        }
+
+        if (abs($allowed - $requested) > 0.00001) {
+            $this->session->data['ohbono_wallet_use'] = $allowed;
         }
 
         $totals[] = [
             'extension' => 'ohbono',
             'code' => 'wallet',
             'title' => $this->language->get('text_wallet'),
-            'value' => -$wallet_use,
+            'value' => -$allowed,
             'sort_order' => (int)$this->config->get('ohbono_wallet_sort_order')
         ];
 
-        $total = max(0, round($total - $wallet_use, 4));
+        $total = max(0, round($total - $allowed, 4));
     }
 
     public function getAvailableBalance(int $customer_id): float
@@ -57,7 +61,10 @@ class Wallet extends \Opencart\System\Engine\Model
 
     public function getSessionWalletUse(): float
     {
-        return round(max(0, (float)($this->session->data['ohbono_wallet_use'] ?? 0)), 4);
+        return round(max(
+            0,
+            (float)($this->session->data['ohbono_wallet_use'] ?? 0)
+        ), 4);
     }
 
     public function calculateAllowedWalletUse(float $requested, float $order_total): float
