@@ -4,12 +4,16 @@
     <div class="page-header">
         <div class="container-fluid">
             <div class="float-end">
-                <button type="submit" form="form-wallet-settings" class="btn btn-primary">
-                    <i class="fa-solid fa-save"></i> {{ button_save }}
+                <button type="submit"
+                        form="form-wallet-settings"
+                        class="btn btn-primary">
+                    <i class="fa-solid fa-save"></i>
+                    {{ button_save }}
                 </button>
 
                 <a href="{{ cancel }}" class="btn btn-light">
-                    <i class="fa-solid fa-reply"></i> {{ button_cancel }}
+                    <i class="fa-solid fa-reply"></i>
+                    {{ button_cancel }}
                 </a>
             </div>
 
@@ -20,73 +24,130 @@
     <div class="container-fluid">
         {% if error_warning %}
             <div class="alert alert-danger alert-dismissible">
-                <i class="fa-solid fa-circle-exclamation"></i> {{ error_warning }}
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {{ error_warning }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         {% endif %}
 
         {% if success %}
             <div class="alert alert-success alert-dismissible">
-                <i class="fa-solid fa-circle-check"></i> {{ success }}
+                <i class="fa-solid fa-circle-check"></i>
+                {{ success }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         {% endif %}
 
         <div class="card">
             <div class="card-header">
-                <i class="fa-solid fa-wallet"></i> {{ text_settings }}
+                <i class="fa-solid fa-wallet"></i>
+                {{ text_edit }}
             </div>
 
             <div class="card-body">
-                <form id="form-wallet-settings" action="{{ action }}" method="post">
+                <form id="form-wallet-settings"
+                      action="{{ save }}"
+                      method="post">
+
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">{{ entry_status }}</label>
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_status }}
+                        </label>
+
                         <div class="col-sm-9">
-                            <select name="ohbono_wallet_status" class="form-select">
-                                <option value="1"{% if ohbono_wallet_status %} selected{% endif %}>{{ text_enabled }}</option>
-                                <option value="0"{% if not ohbono_wallet_status %} selected{% endif %}>{{ text_disabled }}</option>
+                            <select name="ohbono_wallet_status"
+                                    class="form-select">
+                                <option value="1" {% if ohbono_wallet_status %}selected{% endif %}>
+                                    {{ text_enabled }}
+                                </option>
+                                <option value="0" {% if not ohbono_wallet_status %}selected{% endif %}>
+                                    {{ text_disabled }}
+                                </option>
                             </select>
                         </div>
                     </div>
 
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">{{ entry_allow_checkout }}</label>
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_allow_checkout }}
+                        </label>
+
                         <div class="col-sm-9">
-                            <select name="ohbono_wallet_allow_checkout" class="form-select">
-                                <option value="1"{% if ohbono_wallet_allow_checkout %} selected{% endif %}>{{ text_enabled }}</option>
-                                <option value="0"{% if not ohbono_wallet_allow_checkout %} selected{% endif %}>{{ text_disabled }}</option>
+                            <select name="ohbono_wallet_allow_checkout"
+                                    class="form-select">
+                                <option value="1" {% if ohbono_wallet_allow_checkout %}selected{% endif %}>
+                                    {{ text_enabled }}
+                                </option>
+                                <option value="0" {% if not ohbono_wallet_allow_checkout %}selected{% endif %}>
+                                    {{ text_disabled }}
+                                </option>
                             </select>
                         </div>
                     </div>
 
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">{{ entry_minimum_use }}</label>
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_minimum_use }}
+                        </label>
+
                         <div class="col-sm-9">
                             <input type="number"
-                                   step="0.01"
-                                   min="0"
                                    name="ohbono_wallet_minimum_use"
                                    value="{{ ohbono_wallet_minimum_use }}"
+                                   min="0"
+                                   step="0.01"
                                    class="form-control">
-                            <div class="form-text">{{ help_minimum_use }}</div>
+
+                            <div class="form-text">
+                                {{ help_minimum_use }}
+                            </div>
                         </div>
                     </div>
 
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">{{ entry_maximum_use }}</label>
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_maximum_use }}
+                        </label>
+
                         <div class="col-sm-9">
                             <input type="number"
-                                   step="0.01"
-                                   min="0"
                                    name="ohbono_wallet_maximum_use"
                                    value="{{ ohbono_wallet_maximum_use }}"
+                                   min="0"
+                                   step="0.01"
                                    class="form-control">
-                            <div class="form-text">{{ help_maximum_use }}</div>
+
+                            <div class="form-text">
+                                {{ help_maximum_use }}
+                            </div>
                         </div>
                     </div>
 
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">{{ entry_sort_order }}</label>
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_history_limit }}
+                        </label>
+
+                        <div class="col-sm-9">
+                            <input type="number"
+                                   name="ohbono_wallet_history_limit"
+                                   value="{{ ohbono_wallet_history_limit }}"
+                                   min="5"
+                                   max="100"
+                                   step="1"
+                                   class="form-control">
+
+                            <div class="form-text">
+                                {{ help_history_limit }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-0">
+                        <label class="col-sm-3 col-form-label">
+                            {{ entry_sort_order }}
+                        </label>
+
                         <div class="col-sm-9">
                             <input type="number"
                                    name="ohbono_wallet_sort_order"
@@ -94,20 +155,13 @@
                                    class="form-control">
                         </div>
                     </div>
-
-                    <div class="row mb-0">
-                        <label class="col-sm-3 col-form-label">{{ entry_history_limit }}</label>
-                        <div class="col-sm-9">
-                            <input type="number"
-                                   min="5"
-                                   max="100"
-                                   name="ohbono_wallet_history_limit"
-                                   value="{{ ohbono_wallet_history_limit }}"
-                                   class="form-control">
-                        </div>
-                    </div>
                 </form>
             </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <i class="fa-solid fa-circle-info"></i>
+            {{ text_help }}
         </div>
     </div>
 </div>
