@@ -1,83 +1,59 @@
 <?php
 /**
- * OHBONO Wallet Batch 0049-0051 migration.
+ * OHBONO Wallet Batch 0052-0054 migration.
  *
- * Merge these methods into the existing extension installer.
+ * Merge these methods into the existing installer.
  */
 class ControllerExtensionOhbonoInstall extends Controller
 {
-    public function administration0049(): void
+    public function audit0052(): void
     {
-        $this->ensurePermission(
-            'access',
-            'extension/ohbono/module/wallet_customer'
-        );
-
-        $this->ensurePermission(
-            'modify',
-            'extension/ohbono/module/wallet_adjustment'
-        );
+        $this->ensureTransactionIndexes();
 
         $this->response->setOutput(
-            'OHBONO Wallet administration migration 0049 completed.'
+            'OHBONO Wallet audit migration 0052 completed.'
         );
     }
 
-    public function administration0050(): void
+    public function audit0053(): void
     {
-        $this->ensurePermission(
-            'access',
-            'extension/ohbono/module/wallet_customer'
-        );
-
-        $this->ensurePermission(
-            'modify',
-            'extension/ohbono/module/wallet_adjustment'
-        );
+        $this->ensureTransactionIndexes();
 
         $this->response->setOutput(
-            'OHBONO Wallet adjustment migration 0050 completed.'
+            'OHBONO Wallet audit migration 0053 completed.'
         );
     }
 
-    public function administration0051(): void
+    public function audit0054(): void
     {
-        $this->ensureTransactionIndex();
+        $this->ensureTransactionIndexes();
 
         $this->response->setOutput(
-            'OHBONO Wallet service migration 0051 completed.'
+            'OHBONO Wallet audit migration 0054 completed.'
         );
     }
 
-    private function ensurePermission(
-        string $permission,
-        string $route
-    ): void {
-        /*
-         * OpenCart user-group permissions are normally configured through
-         * the admin user-group screen. This method intentionally does not
-         * write directly into user_group permissions because installations
-         * can use custom groups.
-         *
-         * The routes enforce permission checks in their controllers.
-         */
-    }
-
-    private function ensureTransactionIndex(): void
+    private function ensureTransactionIndexes(): void
     {
-        $query = $this->db->query(
-            "SHOW INDEX FROM `" . DB_PREFIX . "wallet_transaction`
-             WHERE Key_name = 'idx_wallet_reference'"
-        );
+        $indexes = [
+            'idx_wallet_customer_date' => '`customer_id`, `date_added`',
+            'idx_wallet_order_date' => '`order_id`, `date_added`',
+            'idx_wallet_type_date' => '`type`, `date_added`'
+        ];
 
-        if ($query->num_rows) {
-            return;
+        foreach ($indexes as $name => $columns) {
+            $query = $this->db->query(
+                "SHOW INDEX FROM `" . DB_PREFIX . "wallet_transaction`
+                 WHERE Key_name = '" . $this->db->escape($name) . "'"
+            );
+
+            if (!$query->num_rows) {
+                $this->db->query(
+                    "ALTER TABLE `" . DB_PREFIX . "wallet_transaction`
+                     ADD KEY `" . $this->db->escape($name) .
+                     "` (" . $columns . ")"
+                );
+            }
         }
-
-        $this->db->query(
-            "ALTER TABLE `" . DB_PREFIX . "wallet_transaction`
-             ADD KEY `idx_wallet_reference`
-             (`customer_id`, `reference`)"
-        );
     }
 }

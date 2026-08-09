@@ -1,11 +1,13 @@
 <?php
 /**
- * OHBONO Wallet Service
+ * OHBONO Wallet Service.
  *
- * Central financial mutation service.
- *
- * All credits/debits use a locked wallet row and create an immutable
- * transaction record containing before/after balances.
+ * Financial mutations are centralized here. Every mutation:
+ * - locks the wallet row
+ * - checks idempotency by reference
+ * - calculates before/after balances
+ * - writes one transaction record
+ * - commits atomically
  */
 class OhbonoWalletService
 {

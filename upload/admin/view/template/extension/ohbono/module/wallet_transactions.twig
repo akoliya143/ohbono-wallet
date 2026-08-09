@@ -1,0 +1,176 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="card mb-3">
+            <div class="card-body">
+                <form method="get"
+                      action="{{ action|default('') }}">
+
+                    <input type="hidden"
+                           name="user_token"
+                           value="{{ user_token|default('') }}">
+
+                    <div class="row g-2">
+                        <div class="col-md-2">
+                            <input type="number"
+                                   name="filter_customer_id"
+                                   value="{{ filter_customer_id }}"
+                                   class="form-control"
+                                   placeholder="Customer ID">
+                        </div>
+
+                        <div class="col-md-2">
+                            <input type="number"
+                                   name="filter_order_id"
+                                   value="{{ filter_order_id }}"
+                                   class="form-control"
+                                   placeholder="Order ID">
+                        </div>
+
+                        <div class="col-md-3">
+                            <select name="filter_type"
+                                    class="form-select">
+                                <option value="">All Types</option>
+                                <option value="admin_adjustment"
+                                    {% if filter_type == 'admin_adjustment' %}selected{% endif %}>
+                                    Admin Adjustment
+                                </option>
+                                <option value="checkout_wallet"
+                                    {% if filter_type == 'checkout_wallet' %}selected{% endif %}>
+                                    Checkout Wallet
+                                </option>
+                                <option value="checkout_wallet_restore"
+                                    {% if filter_type == 'checkout_wallet_restore' %}selected{% endif %}>
+                                    Checkout Restore
+                                </option>
+                                <option value="order_refund"
+                                    {% if filter_type == 'order_refund' %}selected{% endif %}>
+                                    Order Refund
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2">
+                            <select name="filter_direction"
+                                    class="form-select">
+                                <option value="">All Directions</option>
+                                <option value="credit"
+                                    {% if filter_direction == 'credit' %}selected{% endif %}>
+                                    Credit
+                                </option>
+                                <option value="debit"
+                                    {% if filter_direction == 'debit' %}selected{% endif %}>
+                                    Debit
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <button type="submit"
+                                    class="btn btn-primary">
+                                Filter
+                            </button>
+
+                            <a href="{{ action|default('') }}"
+                               class="btn btn-outline-secondary">
+                                Reset
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Type</th>
+                            <th>Direction</th>
+                            <th>Amount</th>
+                            <th>Before</th>
+                            <th>After</th>
+                            <th>Order</th>
+                            <th>Reference</th>
+                            <th>Admin</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.transaction_id }}</td>
+                                <td>
+                                    {{ transaction.customer|trim }}
+                                    <div class="small text-muted">
+                                        {{ transaction.email }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        #{{ transaction.customer_id }}
+                                    </div>
+                                </td>
+                                <td>{{ transaction.type }}</td>
+                                <td>
+                                    {% if transaction.direction == 'credit' %}
+                                        <span class="badge bg-success">
+                                            Credit
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            Debit
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.amount }}</td>
+                                <td>{{ transaction.balance_before }}</td>
+                                <td>{{ transaction.balance_after }}</td>
+                                <td>
+                                    {% if transaction.order_id %}
+                                        #{{ transaction.order_id }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <code>{{ transaction.reference }}</code>
+                                </td>
+                                <td>
+                                    {% if transaction.admin_user %}
+                                        {{ transaction.admin_user }}
+                                    {% else %}
+                                        System
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.date_added }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="11"
+                                    class="text-center py-5">
+                                    {{ text_no_results }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="card-footer">
+                {{ pagination }}
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}

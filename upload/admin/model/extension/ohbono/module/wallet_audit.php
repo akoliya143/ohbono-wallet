@@ -3,80 +3,73 @@ namespace Opencart\Admin\Model\Extension\Ohbono\Module;
 
 class WalletAudit extends \Opencart\System\Engine\Model
 {
-    public function getAudits(
-        array $filters = [],
-        int $start = 0,
-        int $limit = 50
-    ): array {
-        $sql = "SELECT wa.*,
-                       CONCAT(u.firstname, ' ', u.lastname) AS admin_name
-                FROM `" . DB_PREFIX . "wallet_audit` wa
-                LEFT JOIN `" . DB_PREFIX . "user` u
-                    ON u.user_id = wa.admin_user_id
-                WHERE 1";
-
-        $sql .= $this->buildWhere($filters);
-
-        $sql .= " ORDER BY wa.audit_id DESC";
-
-        $start = max(0, $start);
-        $limit = max(1, min(10000, $limit));
-
-        $sql .= " LIMIT " . $start . ", " . $limit;
-
-        return $this->db->query($sql)->rows;
-    }
-
-    public function getTotalAudits(array $filters = []): int
+    public function getSummary(): array
     {
-        $sql = "SELECT COUNT(*) AS total
-                FROM `" . DB_PREFIX . "wallet_audit` wa
-                WHERE 1";
+        $summary = [
+            'transaction_count' => 0,
+            'credit_total' => 0.0,
+            'debit_total' => 0.0,
+            'admin_adjustment_count' => 0,
+            'checkout_count' => 0,
+            'refund_count' => 0
+        ];
 
-        $sql .= $this->buildWhere($filters);
+        $query = $this->db->query(
+            "SELECT
+                COUNT(*) AS transaction_count,
+                COALESCE(SUM(
+                    CASE
+                        WHEN direction = 'credit' THEN amount
+                        ELSE 0
+                    END
+                ), 0) AS credit_total,
+                COALESCE(SUM(
+                    CASE
+                        WHEN direction = 'debit' THEN amount
+                        ELSE 0
+                    END
+                ), 0) AS debit_total,
+                SUM(
+                    CASE
+                        WHEN type = 'admin_adjustment' THEN 1
+                        ELSE 0
+                    END
+                ) AS admin_adjustment_count,
+                SUM(
+                    CASE
+                        WHEN type = 'checkout_wallet' THEN 1
+                        ELSE 0
+                    END
+                ) AS checkout_count,
+                SUM(
+                    CASE
+                        WHEN type = 'order_refund' THEN 1
+                        ELSE 0
+                    END
+                ) AS refund_count
+             FROM `" . DB_PREFIX . "wallet_transaction`"
+        );
 
-        return (int)$this->db->query($sql)->row['total'];
-    }
+        if ($query->num_rows) {
+            $summary['transaction_count'] =
+                (int)$query->row['transaction_count'];
 
-    private function buildWhere(array $filters): string
-    {
-        $sql = '';
+            $summary['credit_total'] =
+                round((float)$query->row['credit_total'], 4);
 
-        $customer_id = (int)($filters['customer_id'] ?? 0);
-        $admin_id = (int)($filters['admin_id'] ?? 0);
-        $action = trim((string)($filters['action'] ?? ''));
-        $date_start = trim((string)($filters['date_start'] ?? ''));
-        $date_end = trim((string)($filters['date_end'] ?? ''));
+            $summary['debit_total'] =
+                round((float)$query->row['debit_total'], 4);
 
-        if ($customer_id > 0) {
-            $sql .= " AND wa.customer_id = '" . $customer_id . "'";
+            $summary['admin_adjustment_count'] =
+                (int)$query->row['admin_adjustment_count'];
+
+            $summary['checkout_count'] =
+                (int)$query->row['checkout_count'];
+
+            $summary['refund_count'] =
+                (int)$query->row['refund_count'];
         }
 
-        if ($admin_id > 0) {
-            $sql .= " AND wa.admin_user_id = '" . $admin_id . "'";
-        }
-
-        if (in_array($action, ['admin_credit', 'admin_debit'], true)) {
-            $sql .= " AND wa.action = '" . $this->db->escape($action) . "'";
-        }
-
-        if ($this->isDate($date_start)) {
-            $sql .= " AND wa.date_added >= '" .
-                $this->db->escape($date_start) . " 00:00:00'";
-        }
-
-        if ($this->isDate($date_end)) {
-            $sql .= " AND wa.date_added <= '" .
-                $this->db->escape($date_end) . " 23:59:59'";
-        }
-
-        return $sql;
-    }
-
-    private function isDate(string $date): bool
-    {
-        $parsed = \DateTime::createFromFormat('Y-m-d', $date);
-
-        return $parsed && $parsed->format('Y-m-d') === $date;
+        return $summary;
     }
 }
