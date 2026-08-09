@@ -3,25 +3,73 @@
 <div id="account-wallet" class="container">
     <div class="row">
         <div class="col">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1>{{ heading_title }}</h1>
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+                <h1 class="mb-0">{{ heading_title }}</h1>
 
                 <a href="{{ account }}" class="btn btn-outline-secondary">
                     <i class="fa-solid fa-user"></i> {{ button_back }}
                 </a>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-body">
-                    <div class="small text-muted">{{ text_available }}</div>
-                    <div class="display-6 fw-bold">{{ balance|number_format(2, '.', ',') }}</div>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="small text-muted">{{ text_available }}</div>
+                            <div class="display-5 fw-bold mt-1">
+                                {{ balance|number_format(2, '.', ',') }}
+                            </div>
+                            <div class="small text-muted mt-2">
+                                {{ text_balance }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="small text-muted">{{ text_summary }}</div>
+
+                            <div class="row g-3 mt-1">
+                                <div class="col-4">
+                                    <div class="small text-muted">
+                                        {{ text_total_credited }}
+                                    </div>
+                                    <div class="fw-bold text-success">
+                                        {{ summary.credited|number_format(2, '.', ',') }}
+                                    </div>
+                                </div>
+
+                                <div class="col-4">
+                                    <div class="small text-muted">
+                                        {{ text_total_debited }}
+                                    </div>
+                                    <div class="fw-bold text-danger">
+                                        {{ summary.debited|number_format(2, '.', ',') }}
+                                    </div>
+                                </div>
+
+                                <div class="col-4">
+                                    <div class="small text-muted">
+                                        {{ text_transaction_count }}
+                                    </div>
+                                    <div class="fw-bold">
+                                        {{ summary.count }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                    {{ text_history }}
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <strong>
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        {{ text_history }}
+                    </strong>
                 </div>
 
                 <div class="card-body p-0">
@@ -35,13 +83,17 @@
                                     <th>{{ column_order }}</th>
                                     <th class="text-end">{{ column_amount }}</th>
                                     <th class="text-end">{{ column_balance }}</th>
+                                    <th class="text-end">{{ column_action }}</th>
                                 </tr>
                             </thead>
 
                             <tbody>
                                 {% for transaction in transactions %}
                                     <tr>
-                                        <td>{{ transaction.date }}</td>
+                                        <td class="text-nowrap">
+                                            {{ transaction.date }}
+                                        </td>
+
                                         <td>
                                             {% if transaction.direction == 'credit' %}
                                                 <span class="badge bg-success">
@@ -57,7 +109,11 @@
                                                 {{ transaction.type }}
                                             </div>
                                         </td>
-                                        <td>{{ transaction.reference ?: '-' }}</td>
+
+                                        <td>
+                                            {{ transaction.reference ?: '-' }}
+                                        </td>
+
                                         <td>
                                             {% if transaction.order_id %}
                                                 #{{ transaction.order_id }}
@@ -65,24 +121,34 @@
                                                 -
                                             {% endif %}
                                         </td>
-                                        <td class="text-end">
+
+                                        <td class="text-end text-nowrap">
                                             {% if transaction.direction == 'credit' %}
-                                                <span class="text-success">
+                                                <span class="text-success fw-semibold">
                                                     +{{ transaction.amount }}
                                                 </span>
                                             {% else %}
-                                                <span class="text-danger">
+                                                <span class="text-danger fw-semibold">
                                                     -{{ transaction.amount }}
                                                 </span>
                                             {% endif %}
                                         </td>
-                                        <td class="text-end">
+
+                                        <td class="text-end text-nowrap">
                                             {{ transaction.balance }}
+                                        </td>
+
+                                        <td class="text-end">
+                                            <a href="{{ transaction.view }}"
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fa-solid fa-eye"></i>
+                                                {{ button_view }}
+                                            </a>
                                         </td>
                                     </tr>
                                 {% else %}
                                     <tr>
-                                        <td colspan="6" class="text-center py-5">
+                                        <td colspan="7" class="text-center py-5">
                                             {{ text_no_transactions }}
                                         </td>
                                     </tr>
@@ -91,6 +157,12 @@
                         </table>
                     </div>
                 </div>
+
+                {% if pagination %}
+                    <div class="card-footer bg-transparent">
+                        {{ pagination }}
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

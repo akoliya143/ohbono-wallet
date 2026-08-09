@@ -95,4 +95,34 @@ class Wallet extends \Opencart\System\Engine\Model
 
         return (int)$query->row['total'];
     }
+
+    public function getSummary(int $customer_id): array
+    {
+        $summary = [
+            'credited' => 0.0,
+            'debited' => 0.0,
+            'count' => 0
+        ];
+
+        if ($customer_id <= 0) {
+            return $summary;
+        }
+
+        $query = $this->db->query(
+            "SELECT
+                COALESCE(SUM(CASE WHEN direction = 'credit' THEN amount ELSE 0 END), 0) AS credited,
+                COALESCE(SUM(CASE WHEN direction = 'debit' THEN amount ELSE 0 END), 0) AS debited,
+                COUNT(*) AS transaction_count
+             FROM `" . DB_PREFIX . "wallet_transaction`
+             WHERE customer_id = '" . (int)$customer_id . "'"
+        );
+
+        if ($query->num_rows) {
+            $summary['credited'] = round((float)$query->row['credited'], 4);
+            $summary['debited'] = round((float)$query->row['debited'], 4);
+            $summary['count'] = (int)$query->row['transaction_count'];
+        }
+
+        return $summary;
+    }
 }
