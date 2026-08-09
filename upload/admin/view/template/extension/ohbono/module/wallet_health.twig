@@ -1,0 +1,136 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        {% if overview.healthy %}
+            <div class="alert alert-success">
+                <i class="fa-solid fa-circle-check"></i>
+                <strong>{{ text_healthy }}</strong>
+                — {{ text_health }}
+            </div>
+        {% else %}
+            <div class="alert alert-danger">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <strong>{{ text_attention }}</strong>
+                — {{ text_health }}
+            </div>
+        {% endif %}
+
+        <div class="row g-3 mb-3">
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">{{ label_wallets }}</div>
+                        <div class="fs-3 fw-bold">{{ overview.wallets }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">{{ label_customers_with_balance }}</div>
+                        <div class="fs-3 fw-bold">{{ overview.customers_with_balance }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">{{ label_transactions }}</div>
+                        <div class="fs-3 fw-bold">{{ overview.ledger_transactions }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="small text-muted">{{ label_difference }}</div>
+                        <div class="fs-3 fw-bold">{{ overview.balance_difference }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">Ledger Reconciliation</div>
+
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="small text-muted">{{ label_balance_total }}</div>
+                        <strong>{{ overview.balance_total }}</strong>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="small text-muted">{{ label_ledger_total }}</div>
+                        <strong>{{ overview.ledger_total }}</strong>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="small text-muted">{{ label_difference }}</div>
+                        <strong>{{ overview.balance_difference }}</strong>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="small text-muted">{{ label_duplicates }}</div>
+                        <strong>{{ overview.duplicate_orders }}</strong>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="small text-muted">{{ label_orphans }}</div>
+                        <strong>{{ overview.orphan_transactions }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if unhealthy_customers %}
+            <div class="card">
+                <div class="card-header">
+                    {{ text_unhealthy_customers }}
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Customer ID</th>
+                                    <th>Wallet ID</th>
+                                    <th class="text-end">Stored Balance</th>
+                                    <th class="text-end">Ledger Balance</th>
+                                    <th class="text-end">Difference</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                {% for customer in unhealthy_customers %}
+                                    <tr>
+                                        <td>#{{ customer.customer_id }}</td>
+                                        <td>#{{ customer.wallet_id }}</td>
+                                        <td class="text-end">{{ customer.balance }}</td>
+                                        <td class="text-end">{{ customer.ledger_balance }}</td>
+                                        <td class="text-end fw-bold">
+                                            {{ customer.balance - customer.ledger_balance }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{{ footer }}
