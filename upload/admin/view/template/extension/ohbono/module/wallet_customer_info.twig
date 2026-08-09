@@ -1,263 +1,42 @@
-{{ header }}{{ column_left }}
-
-<div id="content">
-    <div class="page-header">
-        <div class="container-fluid">
-            <div class="float-end">
-                <a href="{{ back }}" class="btn btn-light">
-                    <i class="fa-solid fa-reply"></i> {{ button_back }}
-                </a>
-            </div>
-
-            <h1>{{ heading_title }}</h1>
-        </div>
+{# Commit 0034 additions: replace/add the adjustment form fields below. #}
+<div class="row g-3">
+    <div class="col-md-6">
+        <label class="form-label">{{ entry_amount }}</label>
+        <input type="number"
+               name="amount"
+               class="form-control"
+               min="0.01"
+               max="100000000"
+               step="0.01"
+               required>
     </div>
 
-    <div class="container-fluid">
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header">{{ text_details }}</div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <div class="small text-muted">{{ label_customer }}</div>
-                            <strong>{{ customer.name ?: 'Customer' }}</strong>
-                        </div>
+    <div class="col-md-6">
+        <label class="form-label">{{ entry_reference }}</label>
+        <input type="text"
+               name="reference"
+               class="form-control"
+               maxlength="128">
+    </div>
 
-                        <div class="mb-3">
-                            <div class="small text-muted">{{ label_email }}</div>
-                            {{ customer.email }}
-                        </div>
+    <div class="col-12">
+        <label class="form-label">{{ entry_comment }}</label>
+        <textarea name="comment"
+                  class="form-control"
+                  rows="2"
+                  maxlength="500"></textarea>
+    </div>
 
-                        <div class="mb-3">
-                            <div class="small text-muted">{{ label_customer_id }}</div>
-                            #{{ customer.customer_id }}
-                        </div>
+    <div class="col-12">
+        <label class="form-label">
+            {{ entry_reason }} <span class="text-danger">*</span>
+        </label>
 
-                        <div class="mb-3">
-                            <div class="small text-muted">{{ label_balance }}</div>
-                            <div class="fs-3 fw-bold">{{ customer.balance }}</div>
-                        </div>
-
-                        <div>
-                            <div class="small text-muted">{{ label_status }}</div>
-                            {% if customer.status %}
-                                <span class="badge bg-success">{{ text_enabled }}</span>
-                            {% else %}
-                                <span class="badge bg-secondary">{{ text_disabled }}</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card h-100">
-                    <div class="card-header">Wallet Summary</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-4">
-                                <div class="small text-muted">{{ label_total_credited }}</div>
-                                <strong class="text-success">{{ summary.credited }}</strong>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">{{ label_total_debited }}</div>
-                                <strong class="text-danger">{{ summary.debited }}</strong>
-                            </div>
-                            <div class="col-4">
-                                <div class="small text-muted">{{ label_transaction_count }}</div>
-                                <strong>{{ summary.count }}</strong>
-                            </div>
-                        </div>
-
-                        <hr>
-
-                        <form id="ohbono-wallet-adjust-form" class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">{{ entry_amount }}</label>
-                                <input type="number"
-                                       name="amount"
-                                       class="form-control"
-                                       min="0.01"
-                                       max="100000000"
-                                       step="0.01"
-                                       required>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">{{ entry_reference }}</label>
-                                <input type="text"
-                                       name="reference"
-                                       class="form-control"
-                                       maxlength="128">
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label">{{ entry_comment }}</label>
-                                <textarea name="comment"
-                                          class="form-control"
-                                          rows="2"
-                                          maxlength="500"></textarea>
-                            </div>
-
-                            <div class="col-12">
-                                <button type="button"
-                                        id="ohbono-credit"
-                                        class="btn btn-success">
-                                    <i class="fa-solid fa-plus"></i>
-                                    {{ button_credit }}
-                                </button>
-
-                                <button type="button"
-                                        id="ohbono-debit"
-                                        class="btn btn-danger">
-                                    <i class="fa-solid fa-minus"></i>
-                                    {{ button_debit }}
-                                </button>
-                            </div>
-
-                            <div id="ohbono-adjust-message"></div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                Wallet Transactions
-            </div>
-
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Date</th>
-                                <th>Type</th>
-                                <th>Direction</th>
-                                <th class="text-end">Amount</th>
-                                <th class="text-end">Balance</th>
-                                <th>Reference</th>
-                                <th>Order</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {% for transaction in transactions %}
-                                <tr>
-                                    <td>{{ transaction.transaction_id }}</td>
-                                    <td>{{ transaction.date }}</td>
-                                    <td>{{ transaction.type }}</td>
-                                    <td>
-                                        {% if transaction.direction == 'credit' %}
-                                            <span class="badge bg-success">
-                                                {{ text_credit }}
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-danger">
-                                                {{ text_debit }}
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-end">{{ transaction.amount }}</td>
-                                    <td class="text-end">{{ transaction.balance }}</td>
-                                    <td>{{ transaction.reference ?: '-' }}</td>
-                                    <td>
-                                        {% if transaction.order_id %}
-                                            #{{ transaction.order_id }}
-                                        {% else %}
-                                            -
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                            {% else %}
-                                <tr>
-                                    <td colspan="8" class="text-center py-4">
-                                        No wallet transactions found.
-                                    </td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+        <textarea name="reason"
+                  class="form-control"
+                  rows="3"
+                  maxlength="500"
+                  required
+                  placeholder="{{ help_reason }}"></textarea>
     </div>
 </div>
-
-<script>
-(function () {
-    'use strict';
-
-    const form = document.getElementById('ohbono-wallet-adjust-form');
-    const credit = document.getElementById('ohbono-credit');
-    const debit = document.getElementById('ohbono-debit');
-    const message = document.getElementById('ohbono-adjust-message');
-
-    if (!form || !credit || !debit) {
-        return;
-    }
-
-    function submitAdjustment(url) {
-        const formData = new FormData(form);
-
-        credit.disabled = true;
-        debit.disabled = true;
-        message.innerHTML = '';
-
-        fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(function (response) {
-            return response.json();
-        })
-        .then(function (result) {
-            if (!result.success) {
-                message.innerHTML =
-                    '<div class="alert alert-danger mt-3">' +
-                    (result.error || 'Wallet adjustment failed.') +
-                    '</div>';
-                return;
-            }
-
-            message.innerHTML =
-                '<div class="alert alert-success mt-3">' +
-                'Wallet updated successfully. New balance: ' +
-                result.balance +
-                '</div>';
-
-            form.reset();
-
-            setTimeout(function () {
-                window.location.reload();
-            }, 700);
-        })
-        .catch(function () {
-            message.innerHTML =
-                '<div class="alert alert-danger mt-3">' +
-                'Unable to process wallet adjustment.' +
-                '</div>';
-        })
-        .finally(function () {
-            credit.disabled = false;
-            debit.disabled = false;
-        });
-    }
-
-    credit.addEventListener('click', function () {
-        submitAdjustment('{{ credit_action }}');
-    });
-
-    debit.addEventListener('click', function () {
-        submitAdjustment('{{ debit_action }}');
-    });
-}());
-</script>
-
-{{ footer }}

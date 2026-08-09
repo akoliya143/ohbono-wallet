@@ -130,9 +130,11 @@ class WalletCustomer extends \Opencart\System\Engine\Model
                     type,
                     direction,
                     amount,
+                    balance_before,
                     balance_after,
                     reference,
                     order_id,
+                    admin_user_id,
                     date_added
              FROM `" . DB_PREFIX . "wallet_transaction`
              WHERE customer_id = '" . (int)$customer_id . "'
@@ -147,13 +149,40 @@ class WalletCustomer extends \Opencart\System\Engine\Model
         float $amount,
         string $reference,
         string $comment,
+        string $reason,
         int $admin_user_id
     ): array {
         if (!in_array($direction, ['credit', 'debit'], true)) {
             throw new \InvalidArgumentException('Invalid wallet adjustment direction.');
         }
 
+        $reason = trim($reason);
+
+        if ($reason === '') {
+            throw new \InvalidArgumentException('A correction reason is required.');
+        }
+
+        if (mb_strlen($reason) > 500) {
+            throw new \InvalidArgumentException('The correction reason is too long.');
+        }
+
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Amount must be greater than zero.');
+        }
+
         $this->load->library('ohbono/wallet_service');
+        $this->load->library('ohbono/audit');
+
+        /*
+         * Capture the balance before the central service changes it.
+         * The service remains the only component allowed to mutate the
+         * financial balance.
+         */
+        $before = $this->wallet_service->getBalance($customer_id);
+
+        if ($direction === 'debit' && $amount > $before) {
+            throw new \RuntimeException('Insufficient wallet balance.');
+        }
 
         $type = $direction === 'credit'
             ? 'admin_credit'
@@ -179,9 +208,44 @@ class WalletCustomer extends \Opencart\System\Engine\Model
                 $admin_user_id
             );
 
+        $after = $this->wallet_service->getBalance($customer_id);
+
+        $this->wallet_audit->log(
+            $customer_id,
+            $direction === 'credit' ? 'admin_credit' : 'admin_debit',
+            $amount,
+            $before,
+            $after,
+            $reason,
+            $admin_user_id,
+            $reference,
+            (int)$transaction_id
+        );
+
         return [
-            'transaction_id' => $transaction_id,
-            'balance' => $this->wallet_service->getBalance($customer_id)
+            'transaction_id' => (int)$transaction_id,
+            'balance_before' => $before,
+            'balance' => $after
         ];
+    }
+
+    public function getAuditLog(int $customer_id, int $limit = 50): array
+    {
+        if ($customer_id <= 0) {
+            return [];
+        }
+
+        $limit = max(1, min(200, $limit));
+
+        return $this->db->query(
+            "SELECT wa.*,
+                    CONCAT(u.firstname, ' ', u.lastname) AS admin_name
+             FROM `" . DB_PREFIX . "wallet_audit` wa
+             LEFT JOIN `" . DB_PREFIX . "user` u
+                ON u.user_id = wa.admin_user_id
+             WHERE wa.customer_id = '" . (int)$customer_id . "'
+             ORDER BY wa.audit_id DESC
+             LIMIT " . $limit
+        )->rows;
     }
 }
