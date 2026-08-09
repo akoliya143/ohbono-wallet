@@ -1,22 +1,24 @@
 # OHBONO Wallet Pro
 
-## Commit 0005
+## Commit 0006
 
-OpenCart integration foundation.
+Customer-facing wallet account and transaction statement.
 
-### Added
+### Customer route
 
-- Wallet service factory
-- Customer-created event integration
-- Admin wallet settings
-- Wallet installation event registration
-- Wallet uninstall event cleanup
-- Customer wallet auto-creation
+`account/wallet`
 
-### Admin route
+### Features
 
-`extension/ohbono/module/wallet`
+- Login protection
+- Available wallet balance
+- Transaction history
+- Credit/debit visual indication
+- Transaction reference
+- Transaction description
+- Balance after each transaction
+- Pagination
 
 ### Important
 
-This commit is not yet the checkout/payment integration. The checkout flow will be added only after the customer wallet and transaction statement are in place.
+This commit is read-only from the wallet ledger perspective. It does not allow customers to directly change their balance.

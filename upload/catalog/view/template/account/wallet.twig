@@ -1,0 +1,88 @@
+{{ header }}
+<div id="account-wallet" class="container">
+    <ul class="breadcrumb">
+        {% for breadcrumb in breadcrumbs %}
+            <li class="breadcrumb-item"><a href="{{ breadcrumb.href }}">{{ breadcrumb.text }}</a></li>
+        {% endfor %}
+    </ul>
+
+    <div class="row">
+        {{ column_left }}
+
+        <div id="content" class="col">
+            {{ content_top }}
+
+            <h1>{{ heading_title }}</h1>
+
+            <div class="card mb-4 wallet-balance-card">
+                <div class="card-body">
+                    <div class="small text-muted mb-1">{{ text_balance }}</div>
+                    <div class="h2 mb-0">{{ balance }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <strong>{{ text_transactions }}</strong>
+                </div>
+
+                <div class="card-body p-0">
+                    {% if transactions %}
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>{{ column_date }}</th>
+                                        <th>{{ column_type }}</th>
+                                        <th>{{ column_reference }}</th>
+                                        <th>{{ column_comment }}</th>
+                                        <th class="text-end">{{ column_amount }}</th>
+                                        <th class="text-end">{{ column_balance }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions %}
+                                        <tr>
+                                            <td>{{ transaction.date }}</td>
+                                            <td>{{ transaction.type }}</td>
+                                            <td>{{ transaction.reference }}</td>
+                                            <td>{{ transaction.comment }}</td>
+                                            <td class="text-end">
+                                                <span class="{{ transaction.direction == 'credit' ? 'text-success' : 'text-danger' }}">
+                                                    {{ transaction.amount }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end">{{ transaction.balance }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="p-4 text-center text-muted">
+                            {{ text_no_transactions }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if pagination %}
+                <div class="row mt-3">
+                    <div class="col-sm-6 text-start">{{ pagination }}</div>
+                    <div class="col-sm-6 text-end">{{ results }}</div>
+                </div>
+            {% endif %}
+
+            <div class="buttons clearfix mt-4">
+                <div class="float-start">
+                    <a href="{{ back }}" class="btn btn-light">{{ button_back }}</a>
+                </div>
+            </div>
+
+            {{ content_bottom }}
+        </div>
+
+        {{ column_right }}
+    </div>
+</div>
+{{ footer }}
