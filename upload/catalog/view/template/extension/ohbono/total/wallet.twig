@@ -1,0 +1,115 @@
+<div id="ohbono-wallet-checkout" class="card mb-3">
+    <div class="card-header">
+        <strong>{{ heading_title }}</strong>
+    </div>
+
+    <div class="card-body">
+        <div class="mb-2">
+            <span class="text-muted">{{ text_available }}:</span>
+            <strong>{{ text_balance }}</strong>
+        </div>
+
+        <div class="input-group">
+            <input
+                type="number"
+                id="ohbono-wallet-amount"
+                class="form-control"
+                min="0.0001"
+                step="0.0001"
+                value="{{ wallet_use > 0 ? wallet_use : '' }}"
+                placeholder="{{ text_amount }}"
+            >
+
+            <button type="button" id="ohbono-wallet-apply" class="btn btn-primary">
+                {{ text_apply }}
+            </button>
+
+            <button type="button" id="ohbono-wallet-remove" class="btn btn-outline-secondary">
+                {{ text_remove }}
+            </button>
+        </div>
+
+        <div id="ohbono-wallet-message" class="small mt-2"></div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const applyUrl = {{ apply|json_encode|raw }};
+    const removeUrl = {{ remove|json_encode|raw }};
+
+    function message(text, success) {
+        const element = document.getElementById('ohbono-wallet-message');
+
+        if (!element) {
+            return;
+        }
+
+        element.className = 'small mt-2 ' + (success ? 'text-success' : 'text-danger');
+        element.textContent = text;
+    }
+
+    function refreshCheckout() {
+        /*
+         * Journal 4 has its own AJAX checkout refresh lifecycle.
+         * The standard OpenCart event is intentionally not hard-coded here.
+         *
+         * A custom event is emitted so the Journal adapter added later can
+         * trigger its native totals refresh without modifying this component.
+         */
+        document.dispatchEvent(new CustomEvent('ohbono:wallet-applied'));
+    }
+
+    document.getElementById('ohbono-wallet-apply')?.addEventListener('click', function () {
+        const amount = document.getElementById('ohbono-wallet-amount').value;
+
+        const body = new URLSearchParams();
+        body.append('amount', amount);
+
+        fetch(applyUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: body.toString()
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) {
+                message(result.error || 'Unable to apply wallet.', false);
+                return;
+            }
+
+            message('Wallet amount applied: ' + result.formatted_wallet_use, true);
+            refreshCheckout();
+        })
+        .catch(() => {
+            message('Unable to apply wallet. Please try again.', false);
+        });
+    });
+
+    document.getElementById('ohbono-wallet-remove')?.addEventListener('click', function () {
+        fetch(removeUrl, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (!result.success) {
+                message('Unable to remove wallet payment.', false);
+                return;
+            }
+
+            document.getElementById('ohbono-wallet-amount').value = '';
+            message('Wallet payment removed.', true);
+            refreshCheckout();
+        })
+        .catch(() => {
+            message('Unable to remove wallet payment.', false);
+        });
+    });
+})();
+</script>
