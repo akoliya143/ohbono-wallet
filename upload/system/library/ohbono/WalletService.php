@@ -3,9 +3,6 @@ namespace Opencart\System\Library\Ohbono;
 
 /**
  * Main wallet domain service.
- *
- * All balance-changing operations belong here. Controllers and checkout
- * integrations must not update the wallet table directly.
  */
 class WalletService
 {
@@ -203,6 +200,103 @@ class WalletService
             }
 
             throw new WalletException('Unable to debit wallet.');
+        }
+    }
+
+    /**
+     * Debit wallet balance for an order exactly once.
+     *
+     * The wallet debit and wallet_order mapping are committed together.
+     * This prevents the dangerous state where money is deducted but the
+     * order mapping is missing, which could otherwise cause a second debit
+     * if the order event is executed again.
+     */
+    public function debitForOrder(
+        int $order_id,
+        int $customer_id,
+        float $amount,
+        string $reference = '',
+        string $comment = ''
+    ): int {
+        $amount = WalletHelper::positiveAmount($amount);
+
+        if ($order_id <= 0 || $customer_id <= 0) {
+            throw new WalletException('Invalid order or customer ID.');
+        }
+
+        $this->beginTransaction();
+
+        try {
+            $existing = $this->repository->getWalletOrderByOrderId($order_id);
+
+            if ($existing) {
+                $this->commit();
+
+                return (int)$existing['transaction_id'];
+            }
+
+            $wallet = $this->repository->getForUpdate($customer_id);
+
+            if (!$wallet) {
+                throw new WalletException('Wallet does not exist.');
+            }
+
+            if (!(int)$wallet['status']) {
+                throw new WalletException('Wallet is disabled.');
+            }
+
+            $before = WalletHelper::amount($wallet['balance']);
+
+            if ($before < $amount) {
+                throw new WalletException('Insufficient wallet balance.');
+            }
+
+            $after = WalletHelper::amount($before - $amount);
+
+            $transaction_id = $this->repository->insertTransaction([
+                'wallet_id' => (int)$wallet['wallet_id'],
+                'customer_id' => $customer_id,
+                'order_id' => $order_id,
+                'type' => WalletTransaction::TYPE_ORDER_PAYMENT,
+                'direction' => WalletTransaction::DIRECTION_DEBIT,
+                'amount' => $amount,
+                'balance_before' => $before,
+                'balance_after' => $after,
+                'reference' => $reference,
+                'comment' => $comment,
+                'created_by' => 0
+            ]);
+
+            $this->repository->updateBalance((int)$wallet['wallet_id'], $after);
+
+            $this->repository->createWalletOrder(
+                $order_id,
+                $customer_id,
+                $transaction_id,
+                $amount
+            );
+
+            $this->commit();
+
+            return $transaction_id;
+        } catch (\Throwable $e) {
+            $this->rollback();
+
+            $this->logger->error(
+                'Wallet order debit failed.',
+                $customer_id,
+                [
+                    'order_id' => $order_id,
+                    'amount' => $amount,
+                    'error' => $e->getMessage()
+                ]
+            );
+
+            if ($e instanceof WalletException) {
+                throw $e;
+            }
+
+            throw new WalletException('Unable to apply wallet payment.');
         }
     }
 

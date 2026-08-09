@@ -10,4 +10,5 @@ $_['text_remove'] = 'Remove Wallet';
 $_['error_login'] = 'Please log in to use your wallet.';
 $_['error_disabled'] = 'Wallet payment is currently unavailable.';
 $_['error_amount'] = 'Please enter a valid wallet amount.';
+$_['error_balance_changed'] = 'Your wallet balance changed. Please review the wallet amount and try again.';
 $_['error_operation'] = 'Unable to apply wallet payment. Please try again.';

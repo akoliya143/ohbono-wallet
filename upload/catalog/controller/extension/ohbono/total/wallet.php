@@ -2,31 +2,22 @@
 namespace Opencart\Catalog\Controller\Extension\Ohbono\Total;
 
 use Opencart\System\Library\Ohbono\WalletFactory;
+use Opencart\System\Library\Ohbono\WalletException;
 
 class Wallet extends \Opencart\System\Engine\Controller
 {
-    /**
-     * Return the generic wallet checkout block.
-     *
-     * Journal 4 can later render this block through its own checkout
-     * integration without changing the wallet calculation engine.
-     */
     public function index(): string
     {
         if (!$this->customer->isLogged()) {
             return '';
         }
 
-        if (!(int)$this->config->get('total_wallet_status')) {
-            return '';
-        }
-
-        if (!(int)$this->config->get('total_wallet_allow_checkout')) {
+        if (!(int)$this->config->get('total_wallet_status') ||
+            !(int)$this->config->get('total_wallet_allow_checkout')) {
             return '';
         }
 
         $this->load->language('extension/ohbono/total/wallet');
-
         $this->load->library('ohbono/WalletFactory');
 
         $factory = new WalletFactory($this->registry);
@@ -67,11 +58,6 @@ class Wallet extends \Opencart\System\Engine\Controller
         return $this->load->view('extension/ohbono/total/wallet', $data);
     }
 
-    /**
-     * Apply a wallet amount to the current checkout session.
-     *
-     * This does not debit the wallet.
-     */
     public function apply(): void
     {
         $this->load->language('extension/ohbono/total/wallet');
@@ -146,9 +132,6 @@ class Wallet extends \Opencart\System\Engine\Controller
         }
     }
 
-    /**
-     * Remove wallet usage from the checkout session.
-     */
     public function remove(): void
     {
         unset($this->session->data['ohbono_wallet_use']);
@@ -156,6 +139,118 @@ class Wallet extends \Opencart\System\Engine\Controller
         $this->json([
             'success' => true
         ]);
+    }
+
+    /**
+     * Validate wallet usage before OpenCart creates an order.
+     *
+     * The actual debit occurs in addOrderAfter().
+     */
+    public function addOrderBefore(string &$route, array &$args): void
+    {
+        $amount = (float)($this->session->data['ohbono_wallet_use'] ?? 0);
+
+        if ($amount <= 0 || !$this->customer->isLogged()) {
+            return;
+        }
+
+        try {
+            $this->load->library('ohbono/WalletFactory');
+
+            $factory = new WalletFactory($this->registry);
+            $service = $factory->service();
+
+            if (!$service->isEnabled() ||
+                !$service->canSpend((int)$this->customer->getId(), $amount)) {
+                unset($this->session->data['ohbono_wallet_use']);
+
+                throw new WalletException(
+                    $this->language->get('error_balance_changed')
+                );
+            }
+        } catch (WalletException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            unset($this->session->data['ohbono_wallet_use']);
+
+            throw new WalletException(
+                $this->language->get('error_operation')
+            );
+        }
+    }
+
+    /**
+     * Perform the real wallet debit after addOrder has produced an order ID.
+     *
+     * If the balance changed between validation and this event, the order is
+     * immediately moved to status 0 and the exception is re-thrown. This
+     * prevents an order from being treated as successfully paid by wallet
+     * funds that were not actually deducted.
+     */
+    public function addOrderAfter(string &$route, array &$args, &$output): void
+    {
+        $amount = (float)($this->session->data['ohbono_wallet_use'] ?? 0);
+
+        if ($amount <= 0 || !$this->customer->isLogged()) {
+            return;
+        }
+
+        $order_id = (int)$output;
+
+        if ($order_id <= 0) {
+            unset($this->session->data['ohbono_wallet_use']);
+
+            throw new WalletException(
+                $this->language->get('error_operation')
+            );
+        }
+
+        $customer_id = (int)$this->customer->getId();
+
+        try {
+            $this->load->library('ohbono/WalletFactory');
+
+            $factory = new WalletFactory($this->registry);
+            $service = $factory->service();
+
+            $service->debitForOrder(
+                $order_id,
+                $customer_id,
+                $amount,
+                'ORDER-' . $order_id,
+                'Wallet payment for order #' . $order_id
+            );
+
+            unset($this->session->data['ohbono_wallet_use']);
+        } catch (\Throwable $e) {
+            /*
+             * The order row already exists because this is an after event.
+             * Void it before propagating the failure so the checkout cannot
+             * continue as if wallet funds had been collected.
+             */
+            try {
+                $this->load->model('checkout/order');
+
+                $this->model_checkout_order->addOrderHistory(
+                    $order_id,
+                    0,
+                    'Wallet payment failed: ' . $e->getMessage(),
+                    false
+                );
+            } catch (\Throwable $history_exception) {
+                // Keep the original wallet failure as the primary exception.
+            }
+
+            unset($this->session->data['ohbono_wallet_use']);
+
+            if ($e instanceof WalletException) {
+                throw $e;
+            }
+
+            throw new WalletException(
+                $this->language->get('error_operation')
+            );
+        }
     }
 
     private function getCurrentCartTotal(): float
@@ -166,7 +261,7 @@ class Wallet extends \Opencart\System\Engine\Controller
         $taxes = [];
         $total = 0.0;
 
-        ($this->model_checkout_cart->getTotals)($totals, $taxes, $total);
+        $this->model_checkout_cart->getTotals($totals, $taxes, $total);
 
         return round($total, 4);
     }

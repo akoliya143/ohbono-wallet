@@ -61,9 +61,6 @@ class WalletRepository
         return $query->num_rows ? $query->row : [];
     }
 
-    /**
-     * Lock the wallet row for the current database transaction.
-     */
     public function getForUpdate(int $customer_id): array
     {
         $query = $this->db->query(
@@ -163,6 +160,18 @@ class WalletRepository
         );
 
         return (int)$this->db->getLastId();
+    }
+
+    public function getWalletOrderByOrderId(int $order_id): array
+    {
+        $query = $this->db->query(
+            "SELECT *
+             FROM `" . DB_PREFIX . "wallet_order`
+             WHERE `order_id` = '" . (int)$order_id . "'
+             LIMIT 1"
+        );
+
+        return $query->num_rows ? $query->row : [];
     }
 
     public function getSetting(string $key, $default = null)

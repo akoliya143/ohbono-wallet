@@ -3,8 +3,6 @@ namespace Opencart\Admin\Controller\Extension\Ohbono\Module;
 
 class Wallet extends \Opencart\System\Engine\Controller
 {
-    private const EXTENSION_CODE = 'ohbono_wallet';
-
     public function index(): void
     {
         $this->load->language('extension/ohbono/module/wallet');
@@ -87,6 +85,8 @@ class Wallet extends \Opencart\System\Engine\Controller
         $data['sort_order'] = $settings['sort_order'] ?? '1';
 
         $data['error_warning'] = $this->error['warning'] ?? '';
+        $data['success'] = $this->session->data['success'] ?? '';
+        unset($this->session->data['success']);
 
         $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
@@ -115,6 +115,7 @@ class Wallet extends \Opencart\System\Engine\Controller
         }
 
         $this->load->model('extension/ohbono/module/wallet');
+        $this->load->model('setting/event');
 
         $defaults = [
             'status' => '1',
@@ -131,29 +132,29 @@ class Wallet extends \Opencart\System\Engine\Controller
             $this->model_extension_ohbono_module_wallet->saveSetting($key, $value);
         }
 
-        $this->load->model('setting/event');
+        $this->addEvent(
+            'ohbono_wallet_customer_add',
+            'catalog/model/account/customer/addCustomer/after',
+            'extension/ohbono/module/wallet.customerAdd',
+            'Create an OHBONO wallet after customer creation.',
+            10
+        );
 
-        $events = [
-            [
-                'code' => 'ohbono_wallet_customer_add',
-                'trigger' => 'catalog/model/account/customer/addCustomer/after',
-                'action' => 'extension/ohbono/module/wallet.customerAdd',
-                'description' => 'Create an OHBONO wallet after customer creation.',
-                'status' => 1,
-                'sort_order' => 1
-            ]
-        ];
+        $this->addEvent(
+            'ohbono_wallet_order_before',
+            'catalog/model/checkout/order/addOrder/before',
+            'extension/ohbono/total/wallet.addOrderBefore',
+            'Validate wallet funds before order creation.',
+            10
+        );
 
-        foreach ($events as $event) {
-            $this->model_setting_event->addEvent(
-                $event['code'],
-                $event['description'],
-                $event['trigger'],
-                $event['action'],
-                $event['status'],
-                $event['sort_order']
-            );
-        }
+        $this->addEvent(
+            'ohbono_wallet_order_after',
+            'catalog/model/checkout/order/addOrder/after',
+            'extension/ohbono/total/wallet.addOrderAfter',
+            'Debit wallet funds after an order is created.',
+            10
+        );
     }
 
     public function uninstall(): void
@@ -163,7 +164,10 @@ class Wallet extends \Opencart\System\Engine\Controller
         }
 
         $this->load->model('setting/event');
+
         $this->model_setting_event->deleteEventByCode('ohbono_wallet_customer_add');
+        $this->model_setting_event->deleteEventByCode('ohbono_wallet_order_before');
+        $this->model_setting_event->deleteEventByCode('ohbono_wallet_order_after');
     }
 
     public function customerAdd(string &$route, array &$args, $output): void
@@ -180,13 +184,6 @@ class Wallet extends \Opencart\System\Engine\Controller
             return;
         }
 
-        $this->load->model('extension/ohbono/module/wallet');
-
-        /*
-         * This integration deliberately uses the wallet table directly only
-         * for creation. All subsequent balance changes go through the
-         * WalletService.
-         */
         $query = $this->db->query(
             "SELECT `wallet_id`
              FROM `" . DB_PREFIX . "wallet`
@@ -202,6 +199,40 @@ class Wallet extends \Opencart\System\Engine\Controller
                      `status` = '1',
                      `date_added` = NOW(),
                      `date_modified` = NOW()"
+            );
+        }
+    }
+
+    private function addEvent(
+        string $code,
+        string $trigger,
+        string $action,
+        string $description,
+        int $sort_order = 0
+    ): void {
+        $event = $this->model_setting_event->getEventByCode($code);
+
+        if ($event) {
+            return;
+        }
+
+        if (version_compare(VERSION, '4.0.1.0', '>=')) {
+            $this->model_setting_event->addEvent([
+                'code' => $code,
+                'description' => $description,
+                'trigger' => $trigger,
+                'action' => $action,
+                'status' => 1,
+                'sort_order' => $sort_order
+            ]);
+        } else {
+            $this->model_setting_event->addEvent(
+                $code,
+                $description,
+                $trigger,
+                $action,
+                1,
+                $sort_order
             );
         }
     }
