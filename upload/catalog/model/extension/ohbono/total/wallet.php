@@ -9,8 +9,8 @@ class Wallet extends \Opencart\System\Engine\Model
             return;
         }
 
-        if (!(int)$this->config->get('total_wallet_status') ||
-            !(int)$this->config->get('total_wallet_allow_checkout')) {
+        if (!(int)$this->config->get('ohbono_wallet_status') ||
+            !(int)$this->config->get('ohbono_wallet_allow_checkout')) {
             return;
         }
 
@@ -32,7 +32,7 @@ class Wallet extends \Opencart\System\Engine\Model
             'code' => 'wallet',
             'title' => $this->language->get('text_wallet'),
             'value' => -$wallet_use,
-            'sort_order' => (int)$this->config->get('total_wallet_sort_order')
+            'sort_order' => (int)$this->config->get('ohbono_wallet_sort_order')
         ];
 
         $total = max(0, round($total - $wallet_use, 4));
@@ -48,7 +48,7 @@ class Wallet extends \Opencart\System\Engine\Model
             "SELECT `balance`
              FROM `" . DB_PREFIX . "wallet`
              WHERE `customer_id` = '" . (int)$customer_id . "'
-               AND `status` = '1'
+             AND `status` = '1'
              LIMIT 1"
         );
 
@@ -74,13 +74,13 @@ class Wallet extends \Opencart\System\Engine\Model
             round($order_total, 4)
         );
 
-        $maximum = (float)$this->config->get('total_wallet_maximum_use');
+        $maximum = (float)$this->config->get('ohbono_wallet_maximum_use');
 
         if ($maximum > 0) {
             $allowed = min($allowed, $maximum);
         }
 
-        $minimum = (float)$this->config->get('total_wallet_minimum_use');
+        $minimum = (float)$this->config->get('ohbono_wallet_minimum_use');
 
         if ($allowed > 0 && $allowed < $minimum) {
             return 0.0;
