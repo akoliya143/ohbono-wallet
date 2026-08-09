@@ -3,65 +3,37 @@ namespace Opencart\Catalog\Model\Extension\Ohbono\Payment;
 
 class Wallet extends \Opencart\System\Engine\Model
 {
-    public function getMethod(): array
-    {
-        return [
-            'code' => 'wallet.wallet',
-            'name' => $this->language->get('heading_title'),
-            'status' => (int)$this->config->get('payment_wallet_status'),
-            'sort_order' => (int)$this->config->get('payment_wallet_sort_order')
-        ];
-    }
-
-    public function validatePayment(): array
+    public function getMethod(array $address = []): array
     {
         if (!$this->customer->isLogged()) {
-            return [
-                'success' => false,
-                'error' => $this->language->get('error_login')
-            ];
+            return [];
         }
 
-        if (!(int)$this->config->get('payment_wallet_status')) {
-            return [
-                'success' => false,
-                'error' => $this->language->get('error_disabled')
-            ];
+        if (!(int)$this->config->get('ohbono_wallet_status') ||
+            !(int)$this->config->get('ohbono_wallet_allow_checkout')) {
+            return [];
         }
 
         $this->load->model('extension/ohbono/total/wallet');
 
-        $cart_total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
-        $wallet_use = $this->model_extension_ohbono_total_wallet->getSessionWalletUse();
-        $balance = $this->model_extension_ohbono_total_wallet->getAvailableBalance(
-            (int)$this->customer->getId()
-        );
+        $balance = $this->model_extension_ohbono_total_wallet
+            ->getAvailableBalance((int)$this->customer->getId());
 
-        if ($cart_total <= 0) {
-            return [
-                'success' => false,
-                'error' => $this->language->get('error_amount')
-            ];
-        }
-
-        if ($wallet_use <= 0 || abs($wallet_use - $cart_total) > 0.0001) {
-            return [
-                'success' => false,
-                'error' => $this->language->get('error_insufficient')
-            ];
-        }
-
-        if ($balance + 0.0001 < $cart_total) {
-            return [
-                'success' => false,
-                'error' => $this->language->get('error_balance_changed')
-            ];
+        if ($balance <= 0) {
+            return [];
         }
 
         return [
-            'success' => true,
-            'amount' => round($cart_total, 4),
-            'remaining' => 0.0
+            'code' => 'wallet',
+            'name' => $this->language->get('text_wallet'),
+            'option' => [
+                'wallet' => [
+                    'code' => 'wallet.wallet',
+                    'name' => $this->language->get('text_wallet')
+                ]
+            ],
+            'sort_order' => (int)$this->config->get('ohbono_wallet_sort_order'),
+            'error' => ''
         ];
     }
 }

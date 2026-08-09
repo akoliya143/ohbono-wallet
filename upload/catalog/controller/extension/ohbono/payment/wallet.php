@@ -7,12 +7,12 @@ class Wallet extends \Opencart\System\Engine\Controller
     {
         $this->load->language('extension/ohbono/payment/wallet');
 
+        $this->load->model('extension/ohbono/total/wallet');
+
         $data['name'] = 'wallet';
         $data['code'] = 'wallet';
         $data['title'] = $this->language->get('text_wallet');
         $data['description'] = $this->language->get('text_description');
-
-        $this->load->model('extension/ohbono/total/wallet');
 
         $data['balance'] = 0.0;
         $data['wallet_used'] = 0.0;
@@ -38,5 +38,80 @@ class Wallet extends \Opencart\System\Engine\Controller
             'extension/ohbono/payment/wallet',
             $data
         );
+    }
+
+    public function confirm(): void
+    {
+        if (!$this->customer->isLogged()) {
+            $this->json([
+                'error' => 'Please login to use your wallet.'
+            ]);
+            return;
+        }
+
+        $this->load->model('extension/ohbono/total/wallet');
+
+        $total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
+        $requested = $this->model_extension_ohbono_total_wallet->getSessionWalletUse();
+
+        $allowed = $this->model_extension_ohbono_total_wallet
+            ->calculateAllowedWalletUse($requested, $total);
+
+        if ($allowed <= 0) {
+            $this->json([
+                'error' => 'No wallet amount is available for this order.'
+            ]);
+            return;
+        }
+
+        $this->session->data['ohbono_wallet_use'] = $allowed;
+
+        $this->json([
+            'success' => true,
+            'wallet_used' => $allowed,
+            'remaining' => round(max(0, $total - $allowed), 4)
+        ]);
+    }
+
+    /**
+     * Used by a payment integration after the order has been created.
+     *
+     * The order must already exist. The amount is revalidated against the
+     * database wallet balance by the central service.
+     */
+    public function finalize(int $order_id, int $customer_id, float $amount): array
+    {
+        if ($order_id <= 0 || $customer_id <= 0 || $amount <= 0) {
+            return [
+                'success' => false,
+                'error' => 'Invalid wallet payment parameters.'
+            ];
+        }
+
+        $this->load->library('ohbono/wallet_service');
+
+        try {
+            $transaction_id = $this->wallet_service->debitForOrder(
+                $customer_id,
+                $order_id,
+                $amount
+            );
+
+            return [
+                'success' => true,
+                'transaction_id' => $transaction_id
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage()
+            ];
+        }
+    }
+
+    private function json(array $data): void
+    {
+        $this->response->addHeader('Content-Type: application/json');
+        $this->response->setOutput(json_encode($data));
     }
 }

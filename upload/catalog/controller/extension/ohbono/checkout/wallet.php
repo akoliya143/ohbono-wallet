@@ -80,9 +80,7 @@ class Wallet extends \Opencart\System\Engine\Controller
     public function info(): void
     {
         if (!$this->customer->isLogged()) {
-            $this->json([
-                'success' => false
-            ]);
+            $this->json(['success' => false]);
             return;
         }
 
@@ -100,12 +98,10 @@ class Wallet extends \Opencart\System\Engine\Controller
         $allowed = $this->model_extension_ohbono_total_wallet
             ->calculateAllowedWalletUse($used, $cart_total);
 
-        if ($allowed != $used) {
-            if ($allowed > 0) {
-                $this->session->data['ohbono_wallet_use'] = $allowed;
-            } else {
-                unset($this->session->data['ohbono_wallet_use']);
-            }
+        if ($allowed > 0) {
+            $this->session->data['ohbono_wallet_use'] = $allowed;
+        } else {
+            unset($this->session->data['ohbono_wallet_use']);
         }
 
         $this->json([
