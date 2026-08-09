@@ -1,0 +1,141 @@
+{{ header }}{{ column_left }}
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="float-end">
+                <a href="{{ back }}" class="btn btn-light">
+                    <i class="fa-solid fa-reply"></i> {{ button_back }}
+                </a>
+            </div>
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        {% if success %}
+            <div class="alert alert-success alert-dismissible">
+                <i class="fa-solid fa-circle-check"></i> {{ success }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="alert alert-danger alert-dismissible">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa-solid fa-user"></i> {{ text_details }}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4"><strong>{{ customer }}</strong></div>
+                    <div class="col-md-4">{{ email }}</div>
+                    <div class="col-md-4 text-md-end">
+                        <strong>{{ balance }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header text-success">
+                        <i class="fa-solid fa-plus"></i> {{ text_credit }}
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ credit_action }}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label">{{ entry_amount }}</label>
+                                <input type="number" name="amount" step="0.0001" min="0.0001" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ entry_reference }}</label>
+                                <input type="text" name="reference" maxlength="100" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ entry_comment }}</label>
+                                <textarea name="comment" maxlength="1000" class="form-control" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fa-solid fa-plus"></i> {{ button_credit }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header text-danger">
+                        <i class="fa-solid fa-minus"></i> {{ text_debit }}
+                    </div>
+                    <div class="card-body">
+                        <form action="{{ debit_action }}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label">{{ entry_amount }}</label>
+                                <input type="number" name="amount" step="0.0001" min="0.0001" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ entry_reference }}</label>
+                                <input type="text" name="reference" maxlength="100" class="form-control">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">{{ entry_comment }}</label>
+                                <textarea name="comment" maxlength="1000" class="form-control" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fa-solid fa-minus"></i> {{ button_debit }}
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-clock-rotate-left"></i> {{ text_transactions }}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ column_date }}</th>
+                                <th>{{ column_type }}</th>
+                                <th class="text-end">{{ column_amount }}</th>
+                                <th class="text-end">{{ column_balance }}</th>
+                                <th>{{ column_reference }}</th>
+                                <th>{{ column_comment }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in transactions %}
+                                <tr>
+                                    <td>{{ transaction.date }}</td>
+                                    <td>{{ transaction.type }}</td>
+                                    <td class="text-end {{ transaction.direction == 'credit' ? 'text-success' : 'text-danger' }}">
+                                        {{ transaction.amount }}
+                                    </td>
+                                    <td class="text-end">{{ transaction.balance }}</td>
+                                    <td>{{ transaction.reference }}</td>
+                                    <td>{{ transaction.comment }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">No transactions found.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ footer }}

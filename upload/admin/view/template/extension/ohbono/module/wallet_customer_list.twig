@@ -1,0 +1,112 @@
+{{ header }}{{ column_left }}
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        {% if success %}
+            <div class="alert alert-success alert-dismissible">
+                <i class="fa-solid fa-circle-check"></i> {{ success }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {% if error %}
+            <div class="alert alert-danger alert-dismissible">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fa-solid fa-filter"></i> {{ button_filter }}
+            </div>
+            <div class="card-body">
+                <form action="{{ filter_url }}" method="get">
+                    <input type="hidden" name="user_token" value="{{ user_token }}">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ entry_customer }}</label>
+                            <input type="text" name="filter_customer" value="{{ filter_customer }}" class="form-control" placeholder="Name, email or customer ID">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">{{ column_status }}</label>
+                            <select name="filter_status" class="form-select">
+                                <option value="-1"{% if filter_status == -1 %} selected{% endif %}>{{ text_all }}</option>
+                                <option value="1"{% if filter_status == 1 %} selected{% endif %}>{{ text_enabled }}</option>
+                                <option value="0"{% if filter_status == 0 %} selected{% endif %}>{{ text_disabled }}</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" type="submit">
+                                <i class="fa-solid fa-filter"></i> {{ button_filter }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-wallet"></i> {{ text_list }}
+            </div>
+
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ column_customer }}</th>
+                                <th>{{ column_email }}</th>
+                                <th class="text-end">{{ column_balance }}</th>
+                                <th>{{ column_status }}</th>
+                                <th class="text-end">{{ column_action }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for wallet in wallets %}
+                                <tr>
+                                    <td>{{ wallet.customer }}</td>
+                                    <td>{{ wallet.email }}</td>
+                                    <td class="text-end">{{ wallet.balance }}</td>
+                                    <td>
+                                        {% if wallet.status %}
+                                            <span class="badge bg-success">{{ text_enabled }}</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">{{ text_disabled }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ wallet.edit }}" class="btn btn-primary btn-sm">
+                                            <i class="fa-solid fa-wallet"></i> {{ button_view }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">No wallets found.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card-footer">
+                <div class="row">
+                    <div class="col-sm-6">{{ pagination }}</div>
+                    <div class="col-sm-6 text-end">{{ results }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ footer }}
