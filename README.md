@@ -1,22 +1,22 @@
 # OHBONO Wallet Pro
 
-## Commit 0004
+## Commit 0005
 
-Core wallet domain layer.
+OpenCart integration foundation.
 
 ### Added
 
-- Wallet service
-- Repository
-- Transaction constants
-- Wallet logger
-- Wallet exception handling
-- Transaction-safe credit/debit operations
+- Wallet service factory
+- Customer-created event integration
+- Admin wallet settings
+- Wallet installation event registration
+- Wallet uninstall event cleanup
+- Customer wallet auto-creation
 
-### Usage
+### Admin route
 
-The OpenCart integration layer will construct the service through the registry in the next commits.
+`extension/ohbono/module/wallet`
 
-Balance-changing operations must use `WalletService::credit()` or `WalletService::debit()`.
+### Important
 
-Do not update `oc_wallet.balance` directly.
+This commit is not yet the checkout/payment integration. The checkout flow will be added only after the customer wallet and transaction statement are in place.
