@@ -1,0 +1,41 @@
+<div id="ohbono-wallet-payment" class="form-check">
+    <input
+        type="radio"
+        name="payment_method"
+        value="wallet.wallet"
+        id="input-payment-wallet"
+        class="form-check-input"
+    >
+
+    <label class="form-check-label" for="input-payment-wallet">
+        {{ name }}
+    </label>
+
+    <div id="ohbono-wallet-payment-message" class="small text-muted mt-1">
+        Wallet will be used to pay the complete remaining order amount.
+    </div>
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    const input = document.getElementById('input-payment-wallet');
+
+    if (!input) {
+        return;
+    }
+
+    input.addEventListener('change', function () {
+        if (!input.checked) {
+            return;
+        }
+
+        document.dispatchEvent(new CustomEvent('ohbono:wallet-payment-selected', {
+            detail: {
+                code: 'wallet.wallet'
+            }
+        }));
+    });
+})();
+</script>

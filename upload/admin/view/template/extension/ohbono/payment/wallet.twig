@@ -1,0 +1,61 @@
+{{ header }}{{ column_left }}
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <div class="float-end">
+                <button type="submit" form="form-wallet-payment" class="btn btn-primary">
+                    <i class="fa-solid fa-save"></i> {{ button_save }}
+                </button>
+                <a href="{{ cancel }}" class="btn btn-light">
+                    <i class="fa-solid fa-reply"></i> {{ button_cancel }}
+                </a>
+            </div>
+
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        {% if error_warning %}
+            <div class="alert alert-danger alert-dismissible">
+                <i class="fa-solid fa-circle-exclamation"></i> {{ error_warning }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        {% if success %}
+            <div class="alert alert-success alert-dismissible">
+                <i class="fa-solid fa-circle-check"></i> {{ success }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fa-solid fa-wallet"></i> {{ heading_title }}
+            </div>
+
+            <div class="card-body">
+                <form id="form-wallet-payment" action="{{ action }}" method="post">
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">{{ entry_status }}</label>
+                        <div class="col-sm-10">
+                            <select name="payment_wallet_status" class="form-select">
+                                <option value="1"{% if payment_wallet_status %} selected{% endif %}>{{ text_enabled }}</option>
+                                <option value="0"{% if not payment_wallet_status %} selected{% endif %}>{{ text_disabled }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">{{ entry_sort_order }}</label>
+                        <div class="col-sm-10">
+                            <input type="number" name="payment_wallet_sort_order" value="{{ payment_wallet_sort_order }}" class="form-control">
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{{ footer }}
