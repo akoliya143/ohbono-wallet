@@ -1,8 +1,6 @@
 <?php
 namespace Opencart\Catalog\Model\Extension\Ohbono\Total;
 
-use Opencart\System\Library\Ohbono\WalletFactory;
-
 class Wallet extends \Opencart\System\Engine\Model
 {
     public function getTotal(array &$totals, array &$taxes, float &$total): void
@@ -26,7 +24,6 @@ class Wallet extends \Opencart\System\Engine\Model
 
         if ($wallet_use <= 0) {
             unset($this->session->data['ohbono_wallet_use']);
-
             return;
         }
 
@@ -103,5 +100,10 @@ class Wallet extends \Opencart\System\Engine\Model
         $this->model_checkout_cart->getTotals($totals, $taxes, $total);
 
         return round(max(0, $total), 4);
+    }
+
+    public function clearSessionWallet(): void
+    {
+        unset($this->session->data['ohbono_wallet_use']);
     }
 }

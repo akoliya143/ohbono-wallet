@@ -33,8 +33,7 @@ class Wallet extends \Opencart\System\Engine\Controller
         $data['text_apply'] = $this->language->get('text_apply');
         $data['text_remove'] = $this->language->get('text_remove');
         $data['text_balance'] = $this->currency->format($balance, $currency);
-
-        $data['wallet_use'] = (float)($this->session->data['ohbono_wallet_use'] ?? 0);
+        $data['wallet_use'] = $this->model_extension_ohbono_total_wallet->getSessionWalletUse();
 
         $data['apply'] = $this->url->link(
             'extension/ohbono/total/wallet.apply',
@@ -58,7 +57,6 @@ class Wallet extends \Opencart\System\Engine\Controller
                 'success' => false,
                 'error' => $this->language->get('error_login')
             ]);
-
             return;
         }
 
@@ -68,24 +66,23 @@ class Wallet extends \Opencart\System\Engine\Controller
                 'success' => false,
                 'error' => $this->language->get('error_disabled')
             ]);
-
             return;
         }
 
         $amount = (float)($this->request->post['amount'] ?? 0);
 
-        if ($amount <= 0) {
+        $this->load->model('extension/ohbono/total/wallet');
+
+        $cart_total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
+
+        if ($amount <= 0 || $cart_total <= 0) {
             $this->json([
                 'success' => false,
                 'error' => $this->language->get('error_amount')
             ]);
-
             return;
         }
 
-        $this->load->model('extension/ohbono/total/wallet');
-
-        $cart_total = $this->model_extension_ohbono_total_wallet->getCurrentCartTotal();
         $allowed = $this->model_extension_ohbono_total_wallet->calculateAllowedWalletUse(
             $amount,
             $cart_total
@@ -96,7 +93,6 @@ class Wallet extends \Opencart\System\Engine\Controller
                 'success' => false,
                 'error' => $this->language->get('error_amount')
             ]);
-
             return;
         }
 
@@ -116,19 +112,10 @@ class Wallet extends \Opencart\System\Engine\Controller
 
     public function remove(): void
     {
-        unset($this->session->data['ohbono_wallet_use']);
+        $this->load->model('extension/ohbono/total/wallet');
+        $this->model_extension_ohbono_total_wallet->clearSessionWallet();
 
         $this->json(['success' => true]);
-    }
-
-    public function getTotal(): void
-    {
-        $this->load->model('extension/ohbono/total/wallet');
-
-        $this->json([
-            'success' => true,
-            'wallet_use' => $this->model_extension_ohbono_total_wallet->getSessionWalletUse()
-        ]);
     }
 
     private function json(array $output): void

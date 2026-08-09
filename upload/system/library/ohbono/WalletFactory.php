@@ -1,12 +1,6 @@
 <?php
 namespace Opencart\System\Library\Ohbono;
 
-/**
- * Creates wallet domain services from the OpenCart registry.
- *
- * Keeping construction in one place prevents controllers and event handlers
- * from duplicating dependency wiring.
- */
 class WalletFactory
 {
     private $registry;
@@ -32,6 +26,15 @@ class WalletFactory
             $this->registry->get('db'),
             $this->repository(),
             $this->logger()
+        );
+    }
+
+    public function orderService(): WalletOrderService
+    {
+        return new WalletOrderService(
+            $this->registry->get('db'),
+            $this->service(),
+            new WalletOrder($this->registry->get('db'))
         );
     }
 }
