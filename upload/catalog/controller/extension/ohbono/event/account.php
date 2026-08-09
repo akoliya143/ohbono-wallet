@@ -3,14 +3,11 @@ namespace Opencart\Catalog\Controller\Extension\Ohbono\Event;
 
 class Account extends \Opencart\System\Engine\Controller
 {
-    /**
-     * Adds OHBONO Wallet links to the customer account data.
-     *
-     * This event controller is intentionally non-destructive: it only adds
-     * links to the account template data.
-     */
-    public function accountAfter(string &$route, array &$args, mixed &$output): void
-    {
+    public function links(
+        string &$route,
+        array &$args,
+        mixed &$output
+    ): void {
         if (!$this->customer->isLogged()) {
             return;
         }
@@ -19,44 +16,33 @@ class Account extends \Opencart\System\Engine\Controller
             return;
         }
 
-        if (!is_string($output) || $output === '') {
-            return;
-        }
+        $wallet_url = $this->url->link(
+            'extension/ohbono/module/wallet'
+        );
+
+        $history_url = $this->url->link(
+            'extension/ohbono/module/wallet_history'
+        );
+
+        $link = [
+            'name' => 'OHBONO Wallet',
+            'href' => $wallet_url,
+            'sort_order' => 25
+        ];
+
+        $history = [
+            'name' => 'Wallet History',
+            'href' => $history_url,
+            'sort_order' => 26
+        ];
 
         /*
-         * OpenCart account templates differ between stores/themes.
-         * The preferred integration is through the account event data
-         * extension below. Existing HTML is left untouched here.
+         * The event is intentionally additive. Journal 3 or another theme
+         * can consume these values through the account-link integration.
          */
-    }
-
-    /**
-     * Returns navigation data for account integrations/themes.
-     */
-    public function links(): void
-    {
-        if (!$this->customer->isLogged() ||
-            !$this->config->get('ohbono_wallet_status')) {
-            $this->response->setOutput(json_encode([
-                'success' => true,
-                'links' => []
-            ]));
-            return;
+        if (is_array($output)) {
+            $output['ohbono_wallet'] = $link;
+            $output['ohbono_wallet_history'] = $history;
         }
-
-        $this->response->addHeader('Content-Type: application/json');
-
-        $this->response->setOutput(json_encode([
-            'success' => true,
-            'links' => [
-                [
-                    'key' => 'wallet',
-                    'title' => 'OHBONO Wallet',
-                    'href' => $this->url->link(
-                        'extension/ohbono/module/wallet.history'
-                    )
-                ]
-            ]
-        ]));
     }
 }

@@ -1,11 +1,13 @@
 <?php
 namespace Opencart\Catalog\Controller\Extension\Ohbono\Module;
 
-class Wallet extends \Opencart\System\Engine\Controller
+class WalletTransactionPage extends \Opencart\System\Engine\Controller
 {
     public function index(): void
     {
-        $this->load->language('extension/ohbono/module/wallet');
+        $this->load->language(
+            'extension/ohbono/module/wallet_transaction'
+        );
 
         if (!$this->customer->isLogged()) {
             $this->response->redirect(
@@ -14,42 +16,32 @@ class Wallet extends \Opencart\System\Engine\Controller
             return;
         }
 
-        if (!$this->config->get('ohbono_wallet_status')) {
+        $transaction_id = (int)(
+            $this->request->get['transaction_id'] ?? 0
+        );
+
+        if ($transaction_id <= 0) {
             $this->response->redirect(
-                $this->url->link('account/account')
+                $this->url->link(
+                    'extension/ohbono/module/wallet_history'
+                )
             );
             return;
         }
 
-        $this->load->model('extension/ohbono/module/wallet');
-
-        $customer_id = (int)$this->customer->getId();
-        $currency = $this->session->data['currency'];
-
-        $balance =
-            $this->model_extension_ohbono_module_wallet
-                ->getBalance($customer_id);
-
         $data['heading_title'] =
             $this->language->get('heading_title');
 
-        $data['text_available_balance'] =
-            $this->language->get('text_available_balance');
+        $data['text_back'] = 'Back to Wallet History';
 
-        $data['text_view_history'] =
-            $this->language->get('text_view_history');
-
-        $data['balance'] = $this->currency->format(
-            $balance,
-            $currency
-        );
+        $data['transaction_id'] = $transaction_id;
 
         $data['history'] = $this->url->link(
             'extension/ohbono/module/wallet_history'
         );
 
-        $data['continue'] = $this->url->link(
-            'account/account'
+        $data['info_url'] = $this->url->link(
+            'extension/ohbono/module/wallet_transaction/info'
         );
 
         $data['header'] =
@@ -67,7 +59,7 @@ class Wallet extends \Opencart\System\Engine\Controller
 
         $this->response->setOutput(
             $this->load->view(
-                'extension/ohbono/module/wallet_dashboard',
+                'extension/ohbono/module/wallet_transaction',
                 $data
             )
         );

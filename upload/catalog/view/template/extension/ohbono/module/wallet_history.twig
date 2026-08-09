@@ -7,110 +7,73 @@
         <div id="content" class="col">
             {{ content_top }}
 
-            <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>{{ heading_title }}</h1>
+
+                <a href="{{ back }}"
+                   class="btn btn-outline-secondary">
+                    {{ text_back_wallet }}
+                </a>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-header">
-                    <strong>{{ text_wallet_history }}</strong>
-                </div>
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ text_date }}</th>
+                                <th>{{ text_type }}</th>
+                                <th>{{ text_amount }}</th>
+                                <th>{{ text_balance }}</th>
+                                <th>{{ text_reference }}</th>
+                                <th>{{ text_order }}</th>
+                                <th></th>
+                            </tr>
+                        </thead>
 
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
+                        <tbody>
+                            {% for transaction in transactions %}
                                 <tr>
-                                    <th>{{ column_date }}</th>
-                                    <th>{{ column_type }}</th>
-                                    <th>{{ column_amount }}</th>
-                                    <th>{{ column_balance }}</th>
-                                    <th>{{ column_reference }}</th>
-                                    <th>{{ column_order }}</th>
+                                    <td>{{ transaction.date }}</td>
+                                    <td>{{ transaction.type }}</td>
+                                    <td>{{ transaction.amount }}</td>
+                                    <td>{{ transaction.balance }}</td>
+                                    <td>
+                                        <code>
+                                            {{ transaction.reference }}
+                                        </code>
+                                    </td>
+                                    <td>
+                                        {% if transaction.order_id %}
+                                            #{{ transaction.order_id }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ transaction.href }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            {{ text_view }}
+                                        </a>
+                                    </td>
                                 </tr>
-                            </thead>
-
-                            <tbody>
-                                {% for transaction in transactions %}
-                                    <tr>
-                                        <td>{{ transaction.date }}</td>
-                                        <td>
-                                            {% if transaction.direction == 'credit' %}
-                                                <span class="badge bg-success">
-                                                    {{ text_credit }}
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-danger">
-                                                    {{ text_debit }}
-                                                </span>
-                                            {% endif %}
-
-                                            <div class="small text-muted">
-                                                {{ transaction.type }}
-                                            </div>
-                                        </td>
-                                        <td>{{ transaction.amount }}</td>
-                                        <td>{{ transaction.balance }}</td>
-                                        <td>{{ transaction.reference ?: '-' }}</td>
-                                        <td>
-                                            {% if transaction.order_id %}
-                                                #{{ transaction.order_id }}
-                                            {% else %}
-                                                -
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% else %}
-                                    <tr>
-                                        <td colspan="6"
-                                            class="text-center py-4">
-                                            {{ text_no_transactions }}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mb-4">
-                <div class="card-header">
-                    <strong>{{ text_refund }}</strong>
-                </div>
-
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead>
+                            {% else %}
                                 <tr>
-                                    <th>{{ column_date }}</th>
-                                    <th>{{ column_amount }}</th>
-                                    <th>{{ column_reference }}</th>
-                                    <th>{{ column_order }}</th>
+                                    <td colspan="7"
+                                        class="text-center py-5">
+                                        {{ text_no_transactions }}
+                                    </td>
                                 </tr>
-                            </thead>
-
-                            <tbody>
-                                {% for refund in refunds %}
-                                    <tr>
-                                        <td>{{ refund.date }}</td>
-                                        <td>{{ refund.amount }}</td>
-                                        <td>{{ refund.reference }}</td>
-                                        <td>#{{ refund.order_id }}</td>
-                                    </tr>
-                                {% else %}
-                                    <tr>
-                                        <td colspan="4"
-                                            class="text-center py-4">
-                                            {{ text_no_transactions }}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
+
+                {% if pagination %}
+                    <div class="card-footer">
+                        {{ pagination }}
+                    </div>
+                {% endif %}
             </div>
 
             {{ content_bottom }}

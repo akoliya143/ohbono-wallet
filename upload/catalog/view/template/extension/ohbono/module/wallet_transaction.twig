@@ -1,0 +1,117 @@
+{{ header }}
+
+<div id="account-wallet-transaction" class="container">
+    <div class="row">
+        {{ column_left }}
+
+        <div id="content" class="col">
+            {{ content_top }}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ heading_title }}</h1>
+
+                <a href="{{ history }}"
+                   class="btn btn-outline-secondary">
+                    {{ text_back }}
+                </a>
+            </div>
+
+            <div id="ohbono-wallet-transaction"
+                 data-transaction-id="{{ transaction_id }}"
+                 class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="text-muted">
+                        Loading transaction...
+                    </div>
+                </div>
+            </div>
+
+            {{ content_bottom }}
+        </div>
+
+        {{ column_right }}
+    </div>
+</div>
+
+<script>
+(function () {
+    const box =
+        document.getElementById('ohbono-wallet-transaction');
+
+    if (!box) {
+        return;
+    }
+
+    const transactionId =
+        box.dataset.transactionId;
+
+    fetch('{{ info_url }}&transaction_id=' +
+        encodeURIComponent(transactionId), {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                box.innerHTML =
+                    '<div class="card-body text-danger">' +
+                    (data.error || 'Unable to load transaction.') +
+                    '</div>';
+                return;
+            }
+
+            const t = data.transaction;
+
+            box.innerHTML =
+                '<div class="card-body">' +
+                    '<div class="row g-4">' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Transaction ID</div>' +
+                            '<strong>#' + t.transaction_id + '</strong>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Date</div>' +
+                            '<strong>' + t.date_added + '</strong>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Type</div>' +
+                            '<strong>' + t.type + '</strong>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Direction</div>' +
+                            '<strong>' + t.direction + '</strong>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Amount</div>' +
+                            '<strong>' + t.amount + '</strong>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Order</div>' +
+                            '<strong>' +
+                                (t.order_id ? '#' + t.order_id : '-') +
+                            '</strong>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Balance Before</div>' +
+                            '<strong>' + t.balance_before + '</strong>' +
+                        '</div>' +
+                        '<div class="col-md-6">' +
+                            '<div class="small text-muted">Balance After</div>' +
+                            '<strong>' + t.balance_after + '</strong>' +
+                        '</div>' +
+                        '<div class="col-12">' +
+                            '<div class="small text-muted">Reference</div>' +
+                            '<code>' + t.reference + '</code>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+        })
+        .catch(function () {
+            box.innerHTML =
+                '<div class="card-body text-danger">' +
+                'Unable to load transaction.' +
+                '</div>';
+        });
+})();
+</script>
+
+{{ footer }}

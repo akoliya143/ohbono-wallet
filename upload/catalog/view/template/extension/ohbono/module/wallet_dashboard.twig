@@ -7,113 +7,23 @@
         <div id="content" class="col">
             {{ content_top }}
 
-            <div class="page-header mb-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>{{ heading_title }}</h1>
+
+                <a href="{{ history }}"
+                   class="btn btn-outline-primary">
+                    {{ text_view_history }}
+                </a>
             </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body p-4">
-                            <div class="small text-muted mb-2">
-                                {{ text_available_balance }}
-                            </div>
-
-                            <div class="display-6 fw-bold">
-                                {{ balance }}
-                            </div>
-
-                            <div class="small text-muted mt-2">
-                                {{ available }}
-                            </div>
-                        </div>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <div class="small text-muted">
+                        {{ text_available_balance }}
                     </div>
-                </div>
 
-                <div class="col-md-6">
-                    <div class="card h-100 border-0 shadow-sm">
-                        <div class="card-body p-4">
-                            <div class="small text-muted mb-2">
-                                {{ text_refund_summary }}
-                            </div>
-
-                            <div class="fs-3 fw-bold">
-                                {{ refund_summary.total }}
-                            </div>
-
-                            <div class="small text-muted mt-2">
-                                {{ refund_summary.count }}
-                                {{ text_refund_count }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-transparent py-3">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <strong>{{ text_recent_transactions }}</strong>
-
-                        <a href="{{ history }}"
-                           class="btn btn-sm btn-outline-primary">
-                            {{ text_view_history }}
-                        </a>
-                    </div>
-                </div>
-
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th>{{ 'Date' }}</th>
-                                    <th>{{ 'Type' }}</th>
-                                    <th>{{ 'Amount' }}</th>
-                                    <th>{{ 'Balance' }}</th>
-                                    <th>{{ 'Reference' }}</th>
-                                </tr>
-                            </thead>
-
-                            <tbody>
-                                {% for transaction in transactions %}
-                                    <tr>
-                                        <td>{{ transaction.date }}</td>
-                                        <td>
-                                            {% if transaction.type == 'order_refund' %}
-                                                <span class="badge bg-info">
-                                                    {{ text_refund }}
-                                                </span>
-                                            {% elseif transaction.direction == 'credit' %}
-                                                <span class="badge bg-success">
-                                                    {{ text_credit }}
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-danger">
-                                                    {{ text_debit }}
-                                                </span>
-                                            {% endif %}
-
-                                            {% if transaction.order_id %}
-                                                <div class="small text-muted">
-                                                    {{ text_order }} #{{ transaction.order_id }}
-                                                </div>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ transaction.amount }}</td>
-                                        <td>{{ transaction.balance }}</td>
-                                        <td>{{ transaction.reference ?: '-' }}</td>
-                                    </tr>
-                                {% else %}
-                                    <tr>
-                                        <td colspan="5"
-                                            class="text-center py-5">
-                                            {{ text_no_transactions }}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="display-6 fw-bold">
+                        {{ balance }}
                     </div>
                 </div>
             </div>
