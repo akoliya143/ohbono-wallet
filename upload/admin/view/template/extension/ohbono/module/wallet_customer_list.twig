@@ -13,19 +13,20 @@
                 <form action="{{ action }}" method="get">
                     <input type="hidden" name="user_token" value="{{ user_token }}">
 
-                    <div class="row g-3">
+                    <div class="row g-2 align-items-end">
                         <div class="col-md-6">
                             <label class="form-label">{{ entry_customer }}</label>
                             <input type="text"
-                                   name="filter_customer"
-                                   value="{{ filter_customer }}"
+                                   name="filter"
+                                   value="{{ filter }}"
                                    class="form-control"
                                    placeholder="Name, email or customer ID">
                         </div>
 
-                        <div class="col-md-2 d-flex align-items-end">
+                        <div class="col-md-2">
                             <button class="btn btn-primary w-100" type="submit">
-                                <i class="fa-solid fa-filter"></i> {{ button_filter }}
+                                <i class="fa-solid fa-filter"></i>
+                                {{ button_filter }}
                             </button>
                         </div>
                     </div>
@@ -47,36 +48,48 @@
                                 <th>{{ column_email }}</th>
                                 <th class="text-end">{{ column_balance }}</th>
                                 <th>{{ column_status }}</th>
+                                <th>{{ column_date_modified }}</th>
                                 <th class="text-end">{{ column_action }}</th>
                             </tr>
                         </thead>
 
                         <tbody>
-                            {% for wallet in wallets %}
+                            {% for customer in customers %}
                                 <tr>
                                     <td>
-                                        <strong>{{ wallet.customer }}</strong>
-                                        <div class="small text-muted">ID: {{ wallet.customer_id }}</div>
+                                        <strong>{{ customer.name ?: 'Customer' }}</strong>
+                                        <div class="small text-muted">
+                                            #{{ customer.customer_id }}
+                                        </div>
                                     </td>
-                                    <td>{{ wallet.email }}</td>
-                                    <td class="text-end fw-bold">{{ wallet.balance }}</td>
+                                    <td>{{ customer.email }}</td>
+                                    <td class="text-end fw-semibold">
+                                        {{ customer.balance }}
+                                    </td>
                                     <td>
-                                        {% if wallet.status %}
-                                            <span class="badge bg-success">{{ text_enabled }}</span>
+                                        {% if customer.status %}
+                                            <span class="badge bg-success">
+                                                {{ text_enabled }}
+                                            </span>
                                         {% else %}
-                                            <span class="badge bg-secondary">{{ text_disabled }}</span>
+                                            <span class="badge bg-secondary">
+                                                {{ text_disabled }}
+                                            </span>
                                         {% endif %}
                                     </td>
+                                    <td>{{ customer.date_modified ?: '-' }}</td>
                                     <td class="text-end">
-                                        <a href="{{ wallet.manage }}" class="btn btn-primary btn-sm">
-                                            <i class="fa-solid fa-wallet"></i> {{ button_manage }}
+                                        <a href="{{ customer.view }}"
+                                           class="btn btn-outline-primary btn-sm">
+                                            <i class="fa-solid fa-eye"></i>
+                                            {{ button_view }}
                                         </a>
                                     </td>
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="5" class="text-center py-4">
-                                        No wallet customers found.
+                                    <td colspan="6" class="text-center py-4">
+                                        No customers found.
                                     </td>
                                 </tr>
                             {% endfor %}
