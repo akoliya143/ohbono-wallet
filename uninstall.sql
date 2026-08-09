@@ -1,9 +1,17 @@
--- OHBONO Wallet Pro
--- Uninstall database schema
--- Replace {DB_PREFIX} with the OpenCart database prefix.
+-- OHBONO Wallet uninstall policy.
+--
+-- Financial tables are intentionally NOT dropped.
+-- Wallet balances and ledger history are financial records.
+--
+-- Remove extension events and configuration only.
 
-DROP TABLE IF EXISTS `{DB_PREFIX}wallet_log`;
-DROP TABLE IF EXISTS `{DB_PREFIX}wallet_order`;
-DROP TABLE IF EXISTS `{DB_PREFIX}wallet_transaction`;
-DROP TABLE IF EXISTS `{DB_PREFIX}wallet_setting`;
-DROP TABLE IF EXISTS `{DB_PREFIX}wallet`;
+DELETE FROM `oc_event`
+WHERE `code` LIKE 'ohbono_wallet_%';
+
+DELETE FROM `oc_setting`
+WHERE `code` = 'ohbono_wallet';
+
+-- DO NOT DROP:
+-- oc_wallet
+-- oc_wallet_transaction
+-- oc_wallet_order
