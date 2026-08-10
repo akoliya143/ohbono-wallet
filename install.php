@@ -1,63 +1,58 @@
 <?php
 /**
- * OHBONO Wallet Batch 0070–0072 migration.
+ * OHBONO Wallet Batch 0076–0078 migration.
  *
- * Merge these methods into the existing extension installer.
+ * Merge these methods into the existing extension installer rather than
+ * replacing an existing installer class.
  */
 class ControllerExtensionOhbonoInstall extends Controller
 {
-    public function emailQueue0070(): void
+    public function adminWallet0076(): void
     {
-        $this->createEmailQueueTable();
+        $this->createAuditTable();
 
         $this->response->setOutput(
-            'OHBONO Wallet email queue migration 0070 completed.'
+            'OHBONO Wallet admin audit migration 0076 completed.'
         );
     }
 
-    public function emailQueue0071(): void
+    public function adminWallet0077(): void
     {
-        $this->createEmailQueueTable();
+        $this->createAuditTable();
 
         $this->response->setOutput(
-            'OHBONO Wallet email queue migration 0071 completed.'
+            'OHBONO Wallet admin transaction migration 0077 completed.'
         );
     }
 
-    public function emailQueue0072(): void
+    public function adminWallet0078(): void
     {
-        $this->createEmailQueueTable();
+        $this->createAuditTable();
 
         $this->response->setOutput(
-            'OHBONO Wallet email queue migration 0072 completed.'
+            'OHBONO Wallet admin audit migration 0078 completed.'
         );
     }
 
-    private function createEmailQueueTable(): void
+    private function createAuditTable(): void
     {
         $this->db->query(
             "CREATE TABLE IF NOT EXISTS `" .
-            DB_PREFIX . "wallet_email_queue` (
-                `queue_id` INT(11) NOT NULL AUTO_INCREMENT,
+            DB_PREFIX . "wallet_admin_audit` (
+                `audit_id` INT(11) NOT NULL AUTO_INCREMENT,
+                `admin_user_id` INT(11) NOT NULL,
                 `customer_id` INT(11) NOT NULL,
                 `transaction_id` INT(11) NOT NULL,
-                `notification_type` VARCHAR(64) NOT NULL,
-                `subject` VARCHAR(255) NOT NULL,
-                `message` TEXT NOT NULL,
-                `status` VARCHAR(16) NOT NULL DEFAULT 'pending',
-                `attempts` INT(11) NOT NULL DEFAULT '0',
-                `available_at` DATETIME NOT NULL,
+                `action` VARCHAR(64) NOT NULL,
+                `reason` TEXT NOT NULL,
                 `date_added` DATETIME NOT NULL,
-                `date_started` DATETIME NULL DEFAULT NULL,
-                `date_sent` DATETIME NULL DEFAULT NULL,
-                `last_error` TEXT NULL,
-                PRIMARY KEY (`queue_id`),
-                UNIQUE KEY `uniq_wallet_email_transaction_type`
-                    (`transaction_id`, `notification_type`),
-                KEY `idx_wallet_email_status_available`
-                    (`status`, `available_at`),
-                KEY `idx_wallet_email_customer`
-                    (`customer_id`)
+                PRIMARY KEY (`audit_id`),
+                KEY `idx_wallet_audit_customer`
+                    (`customer_id`, `date_added`),
+                KEY `idx_wallet_audit_transaction`
+                    (`transaction_id`),
+                KEY `idx_wallet_audit_admin`
+                    (`admin_user_id`, `date_added`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
         );
     }

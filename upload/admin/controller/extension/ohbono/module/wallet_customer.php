@@ -17,56 +17,35 @@ class WalletCustomer extends \Opencart\System\Engine\Controller
             return;
         }
 
-        $customer_id = (int)($this->request->get['customer_id'] ?? 0);
+        $this->load->model(
+            'extension/ohbono/module/wallet_customer'
+        );
 
-        $data = [];
+        $filter_name = (string)(
+            $this->request->get['filter_name'] ?? ''
+        );
+        $filter_email = (string)(
+            $this->request->get['filter_email'] ?? ''
+        );
 
         $data['heading_title'] =
             $this->language->get('heading_title');
-        $data['entry_customer'] =
-            $this->language->get('entry_customer');
-        $data['button_search'] =
-            $this->language->get('button_search');
-        $data['button_adjust'] =
-            $this->language->get('button_adjust');
-        $data['text_balance'] =
-            $this->language->get('text_balance');
-        $data['text_status'] =
-            $this->language->get('text_status');
-        $data['text_active'] =
-            $this->language->get('text_active');
-        $data['text_disabled'] =
-            $this->language->get('text_disabled');
-        $data['text_transactions'] =
-            $this->language->get('text_transactions');
-        $data['text_no_transactions'] =
-            $this->language->get('text_no_transactions');
+        $data['text_no_results'] =
+            $this->language->get('text_no_results');
+        $data['text_filter'] =
+            $this->language->get('text_filter');
 
-        $data['customer_id'] = $customer_id;
-        $data['customer'] = null;
-        $data['transactions'] = [];
+        $data['filter_name'] = $filter_name;
+        $data['filter_email'] = $filter_email;
 
-        $this->load->model('extension/ohbono/module/wallet_customer');
-
-        if ($customer_id > 0) {
-            $data['customer'] =
-                $this->model_extension_ohbono_module_wallet_customer
-                    ->getWallet($customer_id);
-
-            $data['transactions'] =
-                $this->model_extension_ohbono_module_wallet_customer
-                    ->getTransactions($customer_id, 0, 50);
-        }
-
-        $data['adjust_url'] = $this->url->link(
-            'extension/ohbono/module/wallet_adjustment',
-            'user_token=' . $this->session->data['user_token']
-        );
-
-        $data['search_url'] = $this->url->link(
-            'extension/ohbono/module/wallet_customer',
-            'user_token=' . $this->session->data['user_token']
-        );
+        $data['customers'] =
+            $this->model_extension_ohbono_module_wallet_customer
+                ->getCustomers(
+                    $filter_name,
+                    $filter_email,
+                    0,
+                    100
+                );
 
         $data['header'] =
             $this->load->controller('common/header');
@@ -80,6 +59,44 @@ class WalletCustomer extends \Opencart\System\Engine\Controller
                 'extension/ohbono/module/wallet_customer',
                 $data
             )
+        );
+    }
+
+    public function info(): void
+    {
+        if (!$this->user->hasPermission(
+            'access',
+            'extension/ohbono/module/wallet_customer'
+        )) {
+            $this->json(['success' => false]);
+            return;
+        }
+
+        $customer_id = (int)(
+            $this->request->get['customer_id'] ?? 0
+        );
+
+        $this->load->model(
+            'extension/ohbono/module/wallet_customer'
+        );
+
+        $customer =
+            $this->model_extension_ohbono_module_wallet_customer
+                ->getCustomerWallet($customer_id);
+
+        $this->json([
+            'success' => !empty($customer),
+            'customer' => $customer
+        ]);
+    }
+
+    private function json(array $data): void
+    {
+        $this->response->addHeader(
+            'Content-Type: application/json'
+        );
+        $this->response->setOutput(
+            json_encode($data)
         );
     }
 }

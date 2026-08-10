@@ -3,72 +3,77 @@ namespace Opencart\Admin\Model\Extension\Ohbono\Module;
 
 class WalletCustomer extends \Opencart\System\Engine\Model
 {
-    public function getWallet(int $customer_id): ?array
-    {
-        if ($customer_id <= 0) {
-            return null;
+    public function getCustomers(
+        string $name = '',
+        string $email = '',
+        int $start = 0,
+        int $limit = 100
+    ): array {
+        $start = max(0, $start);
+        $limit = max(1, min(200, $limit));
+
+        $where = [];
+
+        if ($name !== '') {
+            $name = $this->db->escape($name);
+            $where[] = "(CONCAT(c.firstname, ' ', c.lastname) LIKE '%" .
+                $name . "%')";
         }
 
-        $query = $this->db->query(
-            "SELECT w.wallet_id,
-                    w.customer_id,
-                    w.balance,
-                    w.status,
-                    w.date_added,
-                    w.date_modified,
+        if ($email !== '') {
+            $where[] = "c.email LIKE '%" .
+                $this->db->escape($email) . "%'";
+        }
+
+        $condition = $where
+            ? ' WHERE ' . implode(' AND ', $where)
+            : '';
+
+        return $this->db->query(
+            "SELECT c.customer_id,
                     c.firstname,
                     c.lastname,
-                    c.email
-             FROM `" . DB_PREFIX . "wallet` w
-             LEFT JOIN `" . DB_PREFIX . "customer` c
-                ON c.customer_id = w.customer_id
-             WHERE w.customer_id = '" . (int)$customer_id . "'
-             LIMIT 1"
-        );
-
-        if (!$query->num_rows) {
-            return null;
-        }
-
-        return [
-            'wallet_id' => (int)$query->row['wallet_id'],
-            'customer_id' => (int)$query->row['customer_id'],
-            'balance' => (float)$query->row['balance'],
-            'status' => (int)$query->row['status'],
-            'date_added' => $query->row['date_added'],
-            'date_modified' => $query->row['date_modified'],
-            'customer' => trim(
-                $query->row['firstname'] . ' ' . $query->row['lastname']
-            ),
-            'email' => $query->row['email']
-        ];
+                    c.email,
+                    c.status AS customer_status,
+                    w.wallet_id,
+                    w.balance,
+                    w.status AS wallet_status,
+                    w.date_modified
+             FROM `" . DB_PREFIX . "customer` c
+             LEFT JOIN `" . DB_PREFIX . "wallet` w
+                ON w.customer_id = c.customer_id
+             " . $condition . "
+             ORDER BY c.customer_id DESC
+             LIMIT " . $start . ", " . $limit
+        )->rows;
     }
 
-    public function getTransactions(
-        int $customer_id,
-        int $start = 0,
-        int $limit = 50
+    public function getCustomerWallet(
+        int $customer_id
     ): array {
         if ($customer_id <= 0) {
             return [];
         }
 
-        return $this->db->query(
-            "SELECT transaction_id,
-                    type,
-                    direction,
-                    amount,
-                    balance_before,
-                    balance_after,
-                    reference,
-                    order_id,
-                    admin_user_id,
-                    date_added
-             FROM `" . DB_PREFIX . "wallet_transaction`
-             WHERE customer_id = '" . (int)$customer_id . "'
-             ORDER BY transaction_id DESC
-             LIMIT " . max(0, $start) . ", " .
-             max(1, min(100, $limit))
-        )->rows;
+        $query = $this->db->query(
+            "SELECT c.customer_id,
+                    c.firstname,
+                    c.lastname,
+                    c.email,
+                    c.status AS customer_status,
+                    w.wallet_id,
+                    w.balance,
+                    w.status AS wallet_status,
+                    w.date_added,
+                    w.date_modified
+             FROM `" . DB_PREFIX . "customer` c
+             LEFT JOIN `" . DB_PREFIX . "wallet` w
+                ON w.customer_id = c.customer_id
+             WHERE c.customer_id = '" .
+                (int)$customer_id . "'
+             LIMIT 1"
+        );
+
+        return $query->num_rows ? $query->row : [];
     }
 }

@@ -1,0 +1,57 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Type</th>
+                            <th>Direction</th>
+                            <th>Amount</th>
+                            <th>Balance After</th>
+                            <th>Reference</th>
+                            <th>Order</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for transaction in transactions %}
+                            <tr>
+                                <td>#{{ transaction.transaction_id }}</td>
+                                <td>
+                                    {{ transaction.customer|trim }}
+                                </td>
+                                <td>{{ transaction.type }}</td>
+                                <td>{{ transaction.direction }}</td>
+                                <td>{{ transaction.amount }}</td>
+                                <td>{{ transaction.balance_after }}</td>
+                                <td>{{ transaction.reference }}</td>
+                                <td>
+                                    {% if transaction.order_id %}
+                                        #{{ transaction.order_id }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.date_added }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}
