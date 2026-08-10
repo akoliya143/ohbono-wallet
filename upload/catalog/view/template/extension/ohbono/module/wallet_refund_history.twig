@@ -1,0 +1,74 @@
+{{ header }}
+
+<div id="account-wallet-refunds" class="container">
+    <div class="row">
+        {{ column_left }}
+
+        <div id="content" class="col">
+            {{ content_top }}
+
+            <h1 class="mb-4">{{ heading_title }}</h1>
+
+            <div class="card border-0 shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Balance</th>
+                                <th>Reference</th>
+                                <th>Order</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for refund in refunds %}
+                                <tr>
+                                    <td>{{ refund.date_added }}</td>
+                                    <td>
+                                        <span class="badge bg-success">
+                                            {{ text_refund }}
+                                        </span>
+                                    </td>
+                                    <td>{{ refund.amount }}</td>
+                                    <td>{{ refund.balance_after }}</td>
+                                    <td class="text-break">
+                                        {{ refund.reference }}
+                                    </td>
+                                    <td>
+                                        {% if refund.order_id %}
+                                            #{{ refund.order_id }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="6"
+                                        class="text-center py-5">
+                                        {{ text_no_results }}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% if pagination %}
+                <div class="mt-4">
+                    {{ pagination }}
+                </div>
+            {% endif %}
+
+            {{ content_bottom }}
+        </div>
+
+        {{ column_right }}
+    </div>
+</div>
+
+{{ footer }}

@@ -18,7 +18,9 @@ class WalletReconciliation extends \Opencart\System\Engine\Model
                 o.order_status_id,
                 wt.transaction_id,
                 wt.amount AS wallet_amount,
-                wt.date_added AS wallet_date
+                wt.date_added AS wallet_date,
+                wps.state AS wallet_state,
+                wps.remaining_amount
              FROM `" . DB_PREFIX . "order` o
              INNER JOIN `" . DB_PREFIX . "wallet_transaction` wt
                 ON wt.order_id = o.order_id
@@ -28,8 +30,16 @@ class WalletReconciliation extends \Opencart\System\Engine\Model
                 ON wr.order_id = o.order_id
                 AND wr.type = 'wallet_reversal'
                 AND wr.direction = 'credit'
+             LEFT JOIN `" . DB_PREFIX . "wallet_payment_state` wps
+                ON wps.order_id = o.order_id
              WHERE wr.transaction_id IS NULL
-             AND o.order_status_id = '0'
+             AND (
+                wps.state = 'reconciliation_required'
+                OR (
+                    wps.wallet_payment_state_id IS NULL
+                    AND o.order_status_id = '0'
+                )
+             )
              ORDER BY wt.transaction_id ASC
              LIMIT " . $start . ", " . $limit
         )->rows;

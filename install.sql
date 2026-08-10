@@ -1,14 +1,14 @@
--- Commit 0029
--- Event registration for OHBONO customer account wallet navigation.
---
--- This statement is safe only when the extension installer controls event
--- creation. Do not run it blindly on a database where the same code already
--- exists.
-
-INSERT INTO `oc_event`
-SET `code` = 'ohbono_wallet_account_menu',
-    `description` = 'OHBONO Wallet customer account navigation',
-    `trigger` = 'catalog/controller/account/account/after',
-    `action` = 'extension/ohbono/event/account.account',
-    `status` = 1,
-    `sort_order` = 100;
+CREATE TABLE IF NOT EXISTS `oc_wallet_payment_state` (
+  `wallet_payment_state_id` int(11) NOT NULL AUTO_INCREMENT,
+  `order_id` int(11) NOT NULL,
+  `customer_id` int(11) NOT NULL,
+  `state` varchar(40) NOT NULL,
+  `wallet_amount` decimal(15,4) NOT NULL DEFAULT '0.0000',
+  `remaining_amount` decimal(15,4) NOT NULL DEFAULT '0.0000',
+  `date_added` datetime NOT NULL,
+  `date_modified` datetime NOT NULL,
+  PRIMARY KEY (`wallet_payment_state_id`),
+  UNIQUE KEY `order_id` (`order_id`),
+  KEY `customer_id` (`customer_id`),
+  KEY `state` (`state`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

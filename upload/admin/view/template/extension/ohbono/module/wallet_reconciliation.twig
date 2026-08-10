@@ -1,0 +1,65 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="alert alert-warning">
+            These orders require review. No wallet funds are automatically
+            reversed from this screen.
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>Order</th>
+                            <th>Customer</th>
+                            <th>Order Total</th>
+                            <th>Wallet Transaction</th>
+                            <th>Wallet Amount</th>
+                            <th>Remaining</th>
+                            <th>State</th>
+                            <th>Wallet Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for order in orders %}
+                            <tr>
+                                <td>#{{ order.order_id }}</td>
+                                <td>#{{ order.customer_id }}</td>
+                                <td>{{ order.total }}</td>
+                                <td>
+                                    #{{ order.transaction_id }}
+                                </td>
+                                <td>{{ order.wallet_amount }}</td>
+                                <td>{{ order.remaining_amount }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">
+                                        {{ order.wallet_state ?: 'Review' }}
+                                    </span>
+                                </td>
+                                <td>{{ order.wallet_date }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="8"
+                                    class="text-center py-5">
+                                    {{ text_no_results }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}
