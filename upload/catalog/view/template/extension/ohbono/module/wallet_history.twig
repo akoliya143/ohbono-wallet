@@ -7,7 +7,9 @@
         <div id="content" class="col">
             {{ content_top }}
 
-            <h1 class="mb-4">{{ heading_title }}</h1>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ heading_title }}</h1>
+            </div>
 
             <div class="card border-0 shadow-sm">
                 <div class="table-responsive">
@@ -20,6 +22,7 @@
                                 <th>Balance</th>
                                 <th>Reference</th>
                                 <th>Order</th>
+                                <th></th>
                             </tr>
                         </thead>
 
@@ -27,6 +30,7 @@
                             {% for transaction in transactions %}
                                 <tr>
                                     <td>{{ transaction.date_added }}</td>
+
                                     <td>
                                         {% if transaction.direction == 'credit' %}
                                             <span class="badge bg-success">
@@ -38,15 +42,19 @@
                                             </span>
                                         {% endif %}
                                     </td>
+
                                     <td>
                                         {{ transaction.amount }}
                                     </td>
+
                                     <td>
                                         {{ transaction.balance_after }}
                                     </td>
+
                                     <td>
                                         {{ transaction.reference }}
                                     </td>
+
                                     <td>
                                         {% if transaction.order_id %}
                                             #{{ transaction.order_id }}
@@ -54,10 +62,17 @@
                                             -
                                         {% endif %}
                                     </td>
+
+                                    <td class="text-end">
+                                        <a href="{{ transaction_links[transaction.transaction_id] }}"
+                                           class="btn btn-sm btn-outline-primary">
+                                            {{ text_view }}
+                                        </a>
+                                    </td>
                                 </tr>
                             {% else %}
                                 <tr>
-                                    <td colspan="6"
+                                    <td colspan="7"
                                         class="text-center py-5">
                                         {{ text_no_results }}
                                     </td>
@@ -67,6 +82,12 @@
                     </table>
                 </div>
             </div>
+
+            {% if pagination %}
+                <div class="mt-4">
+                    {{ pagination }}
+                </div>
+            {% endif %}
 
             {{ content_bottom }}
         </div>

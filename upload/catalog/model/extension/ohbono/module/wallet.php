@@ -10,15 +10,28 @@ class Wallet extends \Opencart\System\Engine\Model
         }
 
         $query = $this->db->query(
-            "SELECT COALESCE(balance, 0) AS balance
+            "SELECT balance
              FROM `" . DB_PREFIX . "wallet`
-             WHERE customer_id = '" . (int)$customer_id . "'
+             WHERE customer_id = '" .
+                (int)$customer_id . "'
              AND status = '1'
              LIMIT 1"
         );
 
         return $query->num_rows
-            ? round((float)$query->row['balance'], 4)
+            ? max(0.0, (float)$query->row['balance'])
             : 0.0;
+    }
+
+    public function hasSufficientBalance(
+        int $customer_id,
+        float $amount
+    ): bool {
+        if ($customer_id <= 0 || $amount <= 0) {
+            return false;
+        }
+
+        return $this->getBalance($customer_id) >=
+            round($amount, 4);
     }
 }

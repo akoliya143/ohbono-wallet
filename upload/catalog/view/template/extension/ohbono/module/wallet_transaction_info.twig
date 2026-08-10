@@ -1,0 +1,118 @@
+{{ header }}
+
+<div id="account-wallet-transaction" class="container">
+    <div class="row">
+        {{ column_left }}
+
+        <div id="content" class="col">
+            {{ content_top }}
+
+            <h1 class="mb-4">{{ heading_title }}</h1>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Transaction ID
+                            </div>
+                            <div class="fw-semibold">
+                                #{{ transaction.transaction_id }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Date
+                            </div>
+                            <div class="fw-semibold">
+                                {{ transaction.date_added }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Type
+                            </div>
+                            <div class="fw-semibold">
+                                {{ transaction.type }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Direction
+                            </div>
+                            <div>
+                                {% if transaction.direction == 'credit' %}
+                                    <span class="badge bg-success">
+                                        {{ text_credit }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-danger">
+                                        {{ text_debit }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Amount
+                            </div>
+                            <div class="fs-4 fw-bold">
+                                {{ transaction.amount }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Balance After
+                            </div>
+                            <div class="fs-4 fw-bold">
+                                {{ transaction.balance_after }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Balance Before
+                            </div>
+                            <div>
+                                {{ transaction.balance_before }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Reference
+                            </div>
+                            <div class="text-break">
+                                {{ transaction.reference }}
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="small text-muted">
+                                Order
+                            </div>
+                            <div>
+                                {% if transaction.order_id %}
+                                    #{{ transaction.order_id }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{ content_bottom }}
+        </div>
+
+        {{ column_right }}
+    </div>
+</div>
+
+{{ footer }}

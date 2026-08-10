@@ -1,0 +1,80 @@
+<div id="ohbono-wallet-checkout"
+     class="card border-0 shadow-sm mb-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <div class="fw-semibold">{{ text_wallet }}</div>
+                <div class="small text-muted">
+                    {{ text_wallet_available }}
+                </div>
+            </div>
+
+            <div class="fw-bold" id="ohbono-wallet-balance">
+                {{ wallet_balance }}
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <label for="ohbono-wallet-amount"
+                   class="form-label">
+                {{ text_wallet_amount }}
+            </label>
+
+            <input type="number"
+                   id="ohbono-wallet-amount"
+                   name="ohbono_wallet_amount"
+                   min="0"
+                   step="0.01"
+                   max="{{ wallet_max }}"
+                   value="0"
+                   class="form-control">
+
+            <div class="small text-muted mt-2">
+                {{ text_remaining_total }}:
+                <span id="ohbono-wallet-remaining">
+                    {{ order_total }}
+                </span>
+            </div>
+        </div>
+
+        <div id="ohbono-wallet-checkout-error"
+             class="alert alert-danger d-none mt-3 mb-0">
+            {{ text_wallet_unavailable }}
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const amount =
+        document.getElementById('ohbono-wallet-amount');
+
+    const remaining =
+        document.getElementById('ohbono-wallet-remaining');
+
+    if (!amount || !remaining) {
+        return;
+    }
+
+    amount.addEventListener('input', function () {
+        const requested =
+            Math.max(0, parseFloat(amount.value || '0'));
+
+        const total =
+            Math.max(0, parseFloat(
+                '{{ order_total_raw }}'
+            ));
+
+        const balance =
+            Math.max(0, parseFloat(
+                '{{ wallet_balance_raw }}'
+            ));
+
+        const usable =
+            Math.min(requested, total, balance);
+
+        remaining.textContent =
+            Math.max(0, total - usable).toFixed(2);
+    });
+})();
+</script>
