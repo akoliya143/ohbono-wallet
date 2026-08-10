@@ -1,16 +1,24 @@
 <?php
 /**
- * OHBONO Wallet default configuration.
+ * OHBONO Wallet integration configuration.
  *
- * This file documents the expected setting names. The actual values are
- * stored through OpenCart's setting system.
+ * Keep project-specific switches here rather than modifying OpenCart core.
  */
 
-return [
-    'ohbono_wallet_status' => 1,
-    'ohbono_wallet_allow_checkout' => 1,
-    'ohbono_wallet_minimum_use' => 0,
-    'ohbono_wallet_maximum_use' => 0,
-    'ohbono_wallet_history_limit' => 20,
-    'ohbono_wallet_sort_order' => 100
-];
+define('OHBONO_WALLET_CODE', 'ohbono_wallet');
+define('OHBONO_WALLET_VERSION', '1.0.1');
+
+define(
+    'OHBONO_WALLET_PAYMENT_ROUTE',
+    'extension/ohbono/module/wallet_payment|capture'
+);
+
+define(
+    'OHBONO_WALLET_STATE_ROUTE',
+    'extension/ohbono/module/wallet_payment_state|update'
+);
+
+define(
+    'OHBONO_WALLET_RECONCILIATION_ROUTE',
+    'extension/ohbono/module/wallet_reconciliation'
+);
