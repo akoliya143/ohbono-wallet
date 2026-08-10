@@ -1,0 +1,6 @@
+# Disabled by default.
+#
+# Before enabling automatic event registration, verify the exact OpenCart
+# 4.1.x event API and the installed Journal checkout flow in staging.
+#
+# This file is documentation-only and is intentionally not executable.
