@@ -1,0 +1,60 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="alert alert-warning">
+            Evidence is manually verified. This screen never converts a
+            failed or unrun scenario into a pass automatically.
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Scenario</th>
+                            <th>Result</th>
+                            <th>Reference</th>
+                            <th>Order</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in results %}
+                            <tr>
+                                <td>{{ row.date_added }}</td>
+                                <td>{{ row.scenario }}</td>
+                                <td>{{ row.result }}</td>
+                                <td>{{ row.reference }}</td>
+                                <td>
+                                    {% if row.order_id %}
+                                        #{{ row.order_id }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ row.notes }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6"
+                                    class="text-center py-5">
+                                    No staging evidence recorded.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}

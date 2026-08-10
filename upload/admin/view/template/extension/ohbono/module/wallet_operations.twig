@@ -1,0 +1,69 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="alert alert-info">
+            Operational events only. Financial ledger values remain in the
+            wallet transaction history.
+        </div>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Event</th>
+                            <th>Status</th>
+                            <th>Customer</th>
+                            <th>Order</th>
+                            <th>Transaction</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for operation in operations %}
+                            <tr>
+                                <td>{{ operation.date_added }}</td>
+                                <td>{{ operation.event }}</td>
+                                <td>{{ operation.status }}</td>
+                                <td>{{ operation.customer_id }}</td>
+                                <td>
+                                    {% if operation.order_id %}
+                                        #{{ operation.order_id }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if operation.transaction_id %}
+                                        #{{ operation.transaction_id }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>{{ operation.message }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7"
+                                    class="text-center py-5">
+                                    No wallet operation events found.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ footer }}
