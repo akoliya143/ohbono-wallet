@@ -11,12 +11,16 @@ class WalletTransaction extends \Opencart\System\Engine\Model
         $start = max(0, $start);
         $limit = max(1, min(200, $limit));
 
-        $where = '';
+        $where = [];
 
         if ($customer_id > 0) {
-            $where = " WHERE wt.customer_id = '" .
+            $where[] = "wt.customer_id = '" .
                 (int)$customer_id . "'";
         }
+
+        $condition = $where
+            ? ' WHERE ' . implode(' AND ', $where)
+            : '';
 
         return $this->db->query(
             "SELECT wt.transaction_id,
@@ -37,9 +41,38 @@ class WalletTransaction extends \Opencart\System\Engine\Model
              FROM `" . DB_PREFIX . "wallet_transaction` wt
              LEFT JOIN `" . DB_PREFIX . "customer` c
                 ON c.customer_id = wt.customer_id
-             " . $where . "
+             " . $condition . "
              ORDER BY wt.transaction_id DESC
              LIMIT " . $start . ", " . $limit
         )->rows;
+    }
+
+    public function getOrderWalletPayment(
+        int $order_id
+    ): array {
+        if ($order_id <= 0) {
+            return [];
+        }
+
+        $query = $this->db->query(
+            "SELECT wt.transaction_id,
+                    wt.customer_id,
+                    wt.amount,
+                    wt.balance_before,
+                    wt.balance_after,
+                    wt.reference,
+                    wt.date_added
+             FROM `" . DB_PREFIX . "wallet_transaction` wt
+             WHERE wt.order_id = '" .
+                (int)$order_id . "'
+             AND wt.type = 'wallet_payment'
+             AND wt.direction = 'debit'
+             ORDER BY wt.transaction_id DESC
+             LIMIT 1"
+        );
+
+        return $query->num_rows
+            ? $query->row
+            : [];
     }
 }
