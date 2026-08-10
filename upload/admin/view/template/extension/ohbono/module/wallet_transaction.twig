@@ -14,27 +14,47 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Date</th>
                             <th>Customer</th>
                             <th>Type</th>
                             <th>Direction</th>
                             <th>Amount</th>
-                            <th>Balance After</th>
+                            <th>Before</th>
+                            <th>After</th>
                             <th>Reference</th>
                             <th>Order</th>
-                            <th>Date</th>
                         </tr>
                     </thead>
 
                     <tbody>
                         {% for transaction in transactions %}
                             <tr>
-                                <td>#{{ transaction.transaction_id }}</td>
+                                <td>
+                                    #{{ transaction.transaction_id }}
+                                </td>
+                                <td>
+                                    {{ transaction.date_added }}
+                                </td>
                                 <td>
                                     {{ transaction.customer|trim }}
+                                    <div class="small text-muted">
+                                        {{ transaction.email }}
+                                    </div>
                                 </td>
                                 <td>{{ transaction.type }}</td>
-                                <td>{{ transaction.direction }}</td>
+                                <td>
+                                    {% if transaction.direction == 'credit' %}
+                                        <span class="badge bg-success">
+                                            Credit
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            Debit
+                                        </span>
+                                    {% endif %}
+                                </td>
                                 <td>{{ transaction.amount }}</td>
+                                <td>{{ transaction.balance_before }}</td>
                                 <td>{{ transaction.balance_after }}</td>
                                 <td>{{ transaction.reference }}</td>
                                 <td>
@@ -44,7 +64,13 @@
                                         -
                                     {% endif %}
                                 </td>
-                                <td>{{ transaction.date_added }}</td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="10"
+                                    class="text-center py-5">
+                                    {{ text_no_results }}
+                                </td>
                             </tr>
                         {% endfor %}
                     </tbody>

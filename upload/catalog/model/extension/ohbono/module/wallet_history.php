@@ -6,7 +6,7 @@ class WalletHistory extends \Opencart\System\Engine\Model
     public function getTransactions(
         int $customer_id,
         int $start = 0,
-        int $limit = 20
+        int $limit = 100
     ): array {
         if ($customer_id <= 0) {
             return [];
@@ -25,25 +25,10 @@ class WalletHistory extends \Opencart\System\Engine\Model
                     order_id,
                     date_added
              FROM `" . DB_PREFIX . "wallet_transaction`
-             WHERE customer_id = '" . (int)$customer_id . "'
+             WHERE customer_id = '" .
+                (int)$customer_id . "'
              ORDER BY transaction_id DESC
              LIMIT " . $start . ", " . $limit
         )->rows;
-    }
-
-    public function getTotalTransactions(
-        int $customer_id
-    ): int {
-        if ($customer_id <= 0) {
-            return 0;
-        }
-
-        $query = $this->db->query(
-            "SELECT COUNT(*) AS total
-             FROM `" . DB_PREFIX . "wallet_transaction`
-             WHERE customer_id = '" . (int)$customer_id . "'"
-        );
-
-        return (int)$query->row['total'];
     }
 }

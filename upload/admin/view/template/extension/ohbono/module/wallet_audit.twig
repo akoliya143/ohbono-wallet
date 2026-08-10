@@ -8,41 +8,97 @@
     </div>
 
     <div class="container-fluid">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="small text-muted">
-                            Total Transactions
-                        </div>
-                        <div id="audit-transaction-count"
-                             class="fs-3 fw-bold">--</div>
-                    </div>
+        <form method="get" class="card mb-3">
+            <div class="card-body row g-2">
+                <input type="hidden"
+                       name="route"
+                       value="extension/ohbono/module/wallet_audit">
+
+                <div class="col-md-3">
+                    <input type="number"
+                           name="filter_customer_id"
+                           value="{{ filter_customer_id }}"
+                           class="form-control"
+                           placeholder="Customer ID">
+                </div>
+
+                <div class="col-md-3">
+                    <input type="number"
+                           name="filter_admin_user_id"
+                           value="{{ filter_admin_user_id }}"
+                           class="form-control"
+                           placeholder="Admin User ID">
+                </div>
+
+                <div class="col-md-3">
+                    <input type="text"
+                           name="filter_action"
+                           value="{{ filter_action }}"
+                           class="form-control"
+                           placeholder="Action">
+                </div>
+
+                <div class="col-md-2">
+                    <button type="submit"
+                            class="btn btn-primary">
+                        {{ text_filter }}
+                    </button>
                 </div>
             </div>
+        </form>
 
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="small text-muted">
-                            Total Credits
-                        </div>
-                        <div id="audit-credit-total"
-                             class="fs-3 fw-bold">--</div>
-                    </div>
-                </div>
-            </div>
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Date</th>
+                            <th>Admin</th>
+                            <th>Customer</th>
+                            <th>Transaction</th>
+                            <th>Action</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
 
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="small text-muted">
-                            Total Debits
-                        </div>
-                        <div id="audit-debit-total"
-                             class="fs-3 fw-bold">--</div>
-                    </div>
-                </div>
+                    <tbody>
+                        {% for audit in audits %}
+                            <tr>
+                                <td>#{{ audit.audit_id }}</td>
+                                <td>{{ audit.date_added }}</td>
+                                <td>
+                                    {{ audit.admin_user|trim }}
+                                    <div class="small text-muted">
+                                        #{{ audit.admin_user_id }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ audit.customer|trim }}
+                                    <div class="small text-muted">
+                                        {{ audit.email }}
+                                    </div>
+                                </td>
+                                <td>
+                                    #{{ audit.transaction_id }}
+                                </td>
+                                <td>
+                                    <code>{{ audit.action }}</code>
+                                </td>
+                                <td>
+                                    {{ audit.reason }}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7"
+                                    class="text-center py-5">
+                                    {{ text_no_results }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

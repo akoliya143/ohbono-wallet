@@ -4,7 +4,7 @@ namespace Opencart\Admin\Model\Extension\Ohbono\Module;
 class WalletTransaction extends \Opencart\System\Engine\Model
 {
     public function getTransactions(
-        int $customer_id,
+        int $customer_id = 0,
         int $start = 0,
         int $limit = 100
     ): array {
@@ -30,7 +30,10 @@ class WalletTransaction extends \Opencart\System\Engine\Model
                     wt.order_id,
                     wt.admin_user_id,
                     wt.date_added,
-                    CONCAT(c.firstname, ' ', c.lastname) AS customer
+                    CONCAT(
+                        c.firstname, ' ', c.lastname
+                    ) AS customer,
+                    c.email
              FROM `" . DB_PREFIX . "wallet_transaction` wt
              LEFT JOIN `" . DB_PREFIX . "customer` c
                 ON c.customer_id = wt.customer_id
