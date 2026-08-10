@@ -18,15 +18,18 @@ class OhbonoWalletService
         int $admin_user_id = 0
     ): int {
         $id = $this->mutate(
-            $customer_id, abs($amount), $type, 'credit',
-            $reference, $reason, $order_id, $admin_user_id
+            $customer_id,
+            abs($amount),
+            $type,
+            'credit',
+            $reference,
+            $reason,
+            $order_id,
+            $admin_user_id
         );
 
-        $this->createNotification(
-            $id,
-            'Your OHBONO Wallet was credited with ' .
-            $this->formatAmount($amount) . '.'
-        );
+        $this->notify($id, 'Your OHBONO Wallet was credited with ' .
+            $this->formatAmount($amount) . '.');
 
         $this->queueEmail($id);
 
@@ -43,15 +46,18 @@ class OhbonoWalletService
         int $admin_user_id = 0
     ): int {
         $id = $this->mutate(
-            $customer_id, abs($amount), $type, 'debit',
-            $reference, $reason, $order_id, $admin_user_id
+            $customer_id,
+            abs($amount),
+            $type,
+            'debit',
+            $reference,
+            $reason,
+            $order_id,
+            $admin_user_id
         );
 
-        $this->createNotification(
-            $id,
-            'Your OHBONO Wallet was debited by ' .
-            $this->formatAmount($amount) . '.'
-        );
+        $this->notify($id, 'Your OHBONO Wallet was debited by ' .
+            $this->formatAmount($amount) . '.');
 
         $this->queueEmail($id);
 
@@ -85,8 +91,10 @@ class OhbonoWalletService
                 "SELECT transaction_id
                  FROM `" . DB_PREFIX . "wallet_transaction`
                  WHERE customer_id = '" . (int)$customer_id . "'
-                 AND reference = '" . $this->db->escape($reference) . "'
-                 LIMIT 1 FOR UPDATE"
+                 AND reference = '" .
+                    $this->db->escape($reference) . "'
+                 LIMIT 1
+                 FOR UPDATE"
             );
 
             if ($existing->num_rows) {
@@ -99,7 +107,8 @@ class OhbonoWalletService
                  FROM `" . DB_PREFIX . "wallet`
                  WHERE customer_id = '" . (int)$customer_id . "'
                  AND status = '1'
-                 LIMIT 1 FOR UPDATE"
+                 LIMIT 1
+                 FOR UPDATE"
             );
 
             if (!$wallet->num_rows) {
@@ -116,6 +125,7 @@ class OhbonoWalletService
                         'Insufficient wallet balance.'
                     );
                 }
+
                 $after = round($before - $amount, 4);
             } else {
                 $after = round($before + $amount, 4);
@@ -130,21 +140,22 @@ class OhbonoWalletService
             );
 
             $this->db->query(
-                "INSERT INTO `" .
-                DB_PREFIX . "wallet_transaction`
+                "INSERT INTO `" . DB_PREFIX . "wallet_transaction`
                  SET wallet_id = '" .
                     (int)$wallet->row['wallet_id'] . "',
                      customer_id = '" . (int)$customer_id . "',
-                     type = '" . $this->db->escape($type) . "',
-                     direction = '" . $this->db->escape($direction) . "',
+                     type = '" .
+                    $this->db->escape($type) . "',
+                     direction = '" .
+                    $this->db->escape($direction) . "',
                      amount = '" . (float)$amount . "',
                      balance_before = '" . (float)$before . "',
                      balance_after = '" . (float)$after . "',
                      reference = '" .
-                        $this->db->escape($reference) . "',
+                    $this->db->escape($reference) . "',
                      order_id = '" . (int)$order_id . "',
                      admin_user_id = '" .
-                        (int)$admin_user_id . "',
+                    (int)$admin_user_id . "',
                      date_added = NOW()"
             );
 
@@ -159,18 +170,11 @@ class OhbonoWalletService
         }
     }
 
-    private function createNotification(
-        int $transaction_id,
-        string $message
-    ): void {
+    private function notify(int $transaction_id, string $message): void
+    {
         try {
-            $service =
-                new \OhbonoWalletNotificationService($this->db);
-
-            $service->createForTransaction(
-                $transaction_id,
-                $message
-            );
+            (new \OhbonoWalletNotificationService($this->db))
+                ->createForTransaction($transaction_id, $message);
         } catch (\Throwable $e) {
             error_log(
                 '[OHBONO Wallet] Notification failed: ' .
@@ -179,12 +183,11 @@ class OhbonoWalletService
         }
     }
 
-    private function queueEmail(int $transaction_id): void {
+    private function queueEmail(int $transaction_id): void
+    {
         try {
-            $service =
-                new \OhbonoWalletEmailQueueService($this->db);
-
-            $service->queueTransactionEmail($transaction_id);
+            (new \OhbonoWalletEmailQueueService($this->db))
+                ->queueTransactionEmail($transaction_id);
         } catch (\Throwable $e) {
             error_log(
                 '[OHBONO Wallet] Email queue failed: ' .
@@ -193,7 +196,8 @@ class OhbonoWalletService
         }
     }
 
-    private function formatAmount(float $amount): string {
+    private function formatAmount(float $amount): string
+    {
         return number_format(abs($amount), 2, '.', '');
     }
 }

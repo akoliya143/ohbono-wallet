@@ -5,10 +5,12 @@ class WalletAdjustment extends \Opencart\System\Engine\Controller
 {
     public function index(): void
     {
-        $this->load->language('extension/ohbono/module/wallet_adjustment');
+        $this->load->language(
+            'extension/ohbono/module/wallet_adjustment'
+        );
 
         if (!$this->user->hasPermission(
-            'modify',
+            'access',
             'extension/ohbono/module/wallet_adjustment'
         )) {
             $this->response->setOutput(
@@ -17,35 +19,39 @@ class WalletAdjustment extends \Opencart\System\Engine\Controller
             return;
         }
 
-        $customer_id = (int)($this->request->get['customer_id'] ?? 0);
+        $customer_id = (int)(
+            $this->request->get['customer_id'] ?? 0
+        );
 
-        $data = [];
+        $this->load->model(
+            'extension/ohbono/module/wallet_customer'
+        );
+
+        $data['customer'] =
+            $this->model_extension_ohbono_module_wallet_customer
+                ->getCustomerWallet($customer_id);
 
         $data['heading_title'] =
             $this->language->get('heading_title');
-        $data['entry_amount'] =
-            $this->language->get('entry_amount');
-        $data['entry_reason'] =
-            $this->language->get('entry_reason');
-        $data['help_amount'] =
-            $this->language->get('help_amount');
+
+        $data['text_credit'] =
+            $this->language->get('text_credit');
+        $data['text_debit'] =
+            $this->language->get('text_debit');
+        $data['text_reason'] =
+            $this->language->get('text_reason');
+        $data['text_reference'] =
+            $this->language->get('text_reference');
+        $data['text_amount'] =
+            $this->language->get('text_amount');
         $data['button_submit'] =
             $this->language->get('button_submit');
-        $data['button_back'] =
-            $this->language->get('button_back');
-
-        $data['customer_id'] = $customer_id;
 
         $data['action'] = $this->url->link(
-            'extension/ohbono/module/wallet_adjustment.adjust',
-            'user_token=' . $this->session->data['user_token']
+            'extension/ohbono/module/wallet_adjustment.adjust'
         );
 
-        $data['back'] = $this->url->link(
-            'extension/ohbono/module/wallet_customer',
-            'user_token=' . $this->session->data['user_token'] .
-            '&customer_id=' . $customer_id
-        );
+        $data['customer_id'] = $customer_id;
 
         $data['header'] =
             $this->load->controller('common/header');
@@ -64,92 +70,92 @@ class WalletAdjustment extends \Opencart\System\Engine\Controller
 
     public function adjust(): void
     {
-        $this->response->addHeader('Content-Type: application/json');
+        $this->load->language(
+            'extension/ohbono/module/wallet_adjustment'
+        );
 
         if (!$this->user->hasPermission(
             'modify',
             'extension/ohbono/module/wallet_adjustment'
         )) {
-            $this->response->setOutput(json_encode([
+            $this->json([
                 'success' => false,
-                'error' => 'Permission denied.'
-            ]));
+                'error' => $this->language->get(
+                    'error_permission'
+                )
+            ]);
             return;
         }
 
-        $customer_id = (int)($this->request->post['customer_id'] ?? 0);
-        $amount = round(
-            (float)($this->request->post['amount'] ?? 0),
-            4
-        );
-        $reason = trim(
-            (string)($this->request->post['reason'] ?? '')
+        $customer_id = (int)(
+            $this->request->post['customer_id'] ?? 0
         );
 
-        if ($customer_id <= 0) {
-            $this->response->setOutput(json_encode([
+        $amount = (float)(
+            $this->request->post['amount'] ?? 0
+        );
+
+        $direction = (string)(
+            $this->request->post['direction'] ?? ''
+        );
+
+        $reason = trim((string)(
+            $this->request->post['reason'] ?? ''
+        ));
+
+        $reference = trim((string)(
+            $this->request->post['reference'] ?? ''
+        ));
+
+        if ($customer_id <= 0 ||
+            $amount <= 0 ||
+            $reason === '' ||
+            $reference === '') {
+            $this->json([
                 'success' => false,
-                'error' => 'Customer ID is required.'
-            ]));
+                'error' => $this->language->get(
+                    'error_validation'
+                )
+            ]);
             return;
         }
-
-        if ($amount == 0) {
-            $this->response->setOutput(json_encode([
-                'success' => false,
-                'error' => 'Adjustment amount cannot be zero.'
-            ]));
-            return;
-        }
-
-        if ($reason === '') {
-            $this->response->setOutput(json_encode([
-                'success' => false,
-                'error' => 'A reason is required.'
-            ]));
-            return;
-        }
-
-        $this->load->library('ohbono/wallet_service');
 
         try {
-            $reference = 'ADMIN-' .
-                (int)$this->user->getId() . '-' .
-                bin2hex(random_bytes(8));
+            $service =
+                new \OhbonoWalletAdminAdjustmentService(
+                    $this->db
+                );
 
-            if ($amount > 0) {
-                $transaction_id =
-                    $this->wallet_service->credit(
-                        $customer_id,
-                        $amount,
-                        'admin_adjustment',
-                        $reference,
-                        $reason,
-                        0,
-                        (int)$this->user->getId()
-                    );
-            } else {
-                $transaction_id =
-                    $this->wallet_service->debit(
-                        $customer_id,
-                        abs($amount),
-                        'admin_adjustment',
-                        $reference,
-                        $reason,
-                        0,
-                        (int)$this->user->getId()
-                    );
-            }
+            $transaction_id =
+                $service->adjust(
+                    (int)$this->user->getId(),
+                    $customer_id,
+                    $amount,
+                    $direction,
+                    $reason,
+                    $reference
+                );
 
-            $this->response->setOutput(json_encode([
+            $this->json([
                 'success' => true,
-                'transaction_id' => (int)$transaction_id
-            ]));
+                'transaction_id' => $transaction_id
+            ]);
         } catch (\Throwable $e) {
-            $this->response->setOutput(json_encode([
+            $this->json([
                 'success' => false,
                 'error' => $e->getMessage()
-            ]));
+            ]);
         }
+    }
+
+    private function json(array $data): void
+    {
+        $this->response->addHeader(
+            'Content-Type: application/json'
+        );
+
+        $this->response->setOutput(
+            json_encode($data)
+        );
     }
 }

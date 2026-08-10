@@ -1,36 +1,32 @@
 <?php
 /**
- * OHBONO Wallet Batch 0076–0078 migration.
+ * OHBONO Wallet Batch 0079–0081 migration.
  *
- * Merge these methods into the existing extension installer rather than
- * replacing an existing installer class.
+ * Merge these methods into the existing extension installer.
  */
 class ControllerExtensionOhbonoInstall extends Controller
 {
-    public function adminWallet0076(): void
+    public function adminAdjustment0079(): void
     {
         $this->createAuditTable();
-
         $this->response->setOutput(
-            'OHBONO Wallet admin audit migration 0076 completed.'
+            'OHBONO Wallet admin adjustment migration 0079 completed.'
         );
     }
 
-    public function adminWallet0077(): void
+    public function adminAdjustment0080(): void
     {
         $this->createAuditTable();
-
         $this->response->setOutput(
-            'OHBONO Wallet admin transaction migration 0077 completed.'
+            'OHBONO Wallet admin adjustment migration 0080 completed.'
         );
     }
 
-    public function adminWallet0078(): void
+    public function adminAdjustment0081(): void
     {
         $this->createAuditTable();
-
         $this->response->setOutput(
-            'OHBONO Wallet admin audit migration 0078 completed.'
+            'OHBONO Wallet admin adjustment migration 0081 completed.'
         );
     }
 

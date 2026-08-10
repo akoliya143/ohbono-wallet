@@ -34,6 +34,8 @@ class WalletCustomer extends \Opencart\System\Engine\Controller
             $this->language->get('text_no_results');
         $data['text_filter'] =
             $this->language->get('text_filter');
+        $data['text_adjust'] =
+            $this->language->get('text_adjust');
 
         $data['filter_name'] = $filter_name;
         $data['filter_email'] = $filter_email;
@@ -59,44 +61,6 @@ class WalletCustomer extends \Opencart\System\Engine\Controller
                 'extension/ohbono/module/wallet_customer',
                 $data
             )
-        );
-    }
-
-    public function info(): void
-    {
-        if (!$this->user->hasPermission(
-            'access',
-            'extension/ohbono/module/wallet_customer'
-        )) {
-            $this->json(['success' => false]);
-            return;
-        }
-
-        $customer_id = (int)(
-            $this->request->get['customer_id'] ?? 0
-        );
-
-        $this->load->model(
-            'extension/ohbono/module/wallet_customer'
-        );
-
-        $customer =
-            $this->model_extension_ohbono_module_wallet_customer
-                ->getCustomerWallet($customer_id);
-
-        $this->json([
-            'success' => !empty($customer),
-            'customer' => $customer
-        ]);
-    }
-
-    private function json(array $data): void
-    {
-        $this->response->addHeader(
-            'Content-Type: application/json'
-        );
-        $this->response->setOutput(
-            json_encode($data)
         );
     }
 }

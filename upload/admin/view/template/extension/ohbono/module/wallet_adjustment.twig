@@ -8,97 +8,133 @@
     </div>
 
     <div class="container-fluid">
-        <div id="ohbono-adjustment-error"
-             class="alert alert-danger d-none"></div>
+        {% if customer %}
+            <div class="card mb-3">
+                <div class="card-body">
+                    <strong>
+                        {{ customer.firstname }}
+                        {{ customer.lastname }}
+                    </strong>
 
-        <div id="ohbono-adjustment-success"
-             class="alert alert-success d-none"></div>
+                    <div class="small text-muted">
+                        {{ customer.email }}
+                    </div>
 
-        <div class="card">
-            <div class="card-header">
-                {{ heading_title }}
+                    <div class="mt-2">
+                        Current balance:
+                        <strong>
+                            {{ customer.balance|default('0.00') }}
+                        </strong>
+                    </div>
+                </div>
             </div>
 
-            <div class="card-body">
-                <form id="ohbono-wallet-adjustment-form"
-                      action="{{ action }}"
-                      method="post">
+            <div id="ohbono-adjustment-error"
+                 class="alert alert-danger d-none"></div>
 
+            <div id="ohbono-adjustment-success"
+                 class="alert alert-success d-none"></div>
+
+            <form id="ohbono-wallet-adjustment"
+                  action="{{ action }}"
+                  method="post"
+                  class="card">
+
+                <div class="card-body">
                     <input type="hidden"
                            name="customer_id"
                            value="{{ customer_id }}">
 
-                    <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">
-                            {{ entry_amount }}
+                    <div class="mb-3">
+                        <label class="form-label">
+                            {{ text_amount }}
                         </label>
 
-                        <div class="col-sm-9">
-                            <input type="number"
-                                   name="amount"
-                                   value=""
-                                   step="0.0001"
-                                   class="form-control"
-                                   required>
-
-                            <div class="form-text">
-                                {{ help_amount }}
-                            </div>
-                        </div>
+                        <input type="number"
+                               name="amount"
+                               min="0.01"
+                               step="0.01"
+                               required
+                               class="form-control">
                     </div>
 
-                    <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">
-                            {{ entry_reason }}
+                    <div class="mb-3">
+                        <label class="form-label">
+                            Adjustment
                         </label>
 
-                        <div class="col-sm-9">
-                            <textarea name="reason"
-                                      rows="4"
-                                      class="form-control"
-                                      required></textarea>
-                        </div>
+                        <select name="direction"
+                                class="form-select"
+                                required>
+                            <option value="credit">
+                                {{ text_credit }}
+                            </option>
+                            <option value="debit">
+                                {{ text_debit }}
+                            </option>
+                        </select>
                     </div>
 
-                    <div class="d-flex justify-content-between">
-                        <a href="{{ back }}"
-                           class="btn btn-outline-secondary">
-                            {{ button_back }}
-                        </a>
+                    <div class="mb-3">
+                        <label class="form-label">
+                            {{ text_reason }}
+                        </label>
 
-                        <button type="submit"
-                                class="btn btn-primary">
-                            {{ button_submit }}
-                        </button>
+                        <textarea name="reason"
+                                  rows="4"
+                                  required
+                                  minlength="5"
+                                  class="form-control"
+                                  placeholder="Explain why this adjustment is required"></textarea>
                     </div>
-                </form>
+
+                    <div class="mb-4">
+                        <label class="form-label">
+                            {{ text_reference }}
+                        </label>
+
+                        <input type="text"
+                               name="reference"
+                               required
+                               minlength="5"
+                               class="form-control"
+                               placeholder="Example: ADMIN-2026-000001">
+                    </div>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        {{ button_submit }}
+                    </button>
+                </div>
+            </form>
+        {% else %}
+            <div class="alert alert-danger">
+                Customer wallet not found.
             </div>
-        </div>
+        {% endif %}
     </div>
 </div>
 
 <script>
 (function () {
     const form =
-        document.getElementById(
-            'ohbono-wallet-adjustment-form'
-        );
+        document.getElementById('ohbono-wallet-adjustment');
 
-    const errorBox =
-        document.getElementById(
-            'ohbono-adjustment-error'
-        );
+    if (!form) {
+        return;
+    }
 
-    const successBox =
-        document.getElementById(
-            'ohbono-adjustment-success'
-        );
+    const error =
+        document.getElementById('ohbono-adjustment-error');
+
+    const success =
+        document.getElementById('ohbono-adjustment-success');
 
     form.addEventListener('submit', function (event) {
         event.preventDefault();
 
-        errorBox.classList.add('d-none');
-        successBox.classList.add('d-none');
+        error.classList.add('d-none');
+        success.classList.add('d-none');
 
         fetch(form.action, {
             method: 'POST',
@@ -106,23 +142,30 @@
         })
         .then(response => response.json())
         .then(data => {
-            if (!data.success) {
-                errorBox.textContent = data.error || 'Adjustment failed.';
-                errorBox.classList.remove('d-none');
-                return;
+            if (data.success) {
+                success.textContent =
+                    'Adjustment completed. Transaction #' +
+                    data.transaction_id;
+
+                success.classList.remove('d-none');
+
+                form.reset();
+
+                form.querySelector(
+                    '[name="customer_id"]'
+                ).value = '{{ customer_id }}';
+            } else {
+                error.textContent =
+                    data.error || 'Unable to apply adjustment.';
+
+                error.classList.remove('d-none');
             }
-
-            successBox.textContent =
-                'Wallet adjustment completed. Transaction #' +
-                data.transaction_id;
-
-            successBox.classList.remove('d-none');
-            form.reset();
         })
         .catch(function () {
-            errorBox.textContent =
-                'Unable to process the wallet adjustment.';
-            errorBox.classList.remove('d-none');
+            error.textContent =
+                'Unable to communicate with the server.';
+
+            error.classList.remove('d-none');
         });
     });
 })();

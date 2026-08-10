@@ -86,9 +86,9 @@
                                 </td>
                                 <td class="text-end">
                                     {% if customer.wallet_id %}
-                                        <a href="{{ url('extension/ohbono/module/wallet_customer.info', 'customer_id=' ~ customer.customer_id) }}"
+                                        <a href="{{ url('extension/ohbono/module/wallet_adjustment', 'customer_id=' ~ customer.customer_id) }}"
                                            class="btn btn-sm btn-outline-primary">
-                                            {{ text_view }}
+                                            {{ text_adjust }}
                                         </a>
                                     {% endif %}
                                 </td>
