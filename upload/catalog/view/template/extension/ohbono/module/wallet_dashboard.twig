@@ -10,10 +10,17 @@
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <h1>{{ heading_title }}</h1>
 
-                <a href="{{ history }}"
-                   class="btn btn-outline-primary">
-                    {{ text_view_history }}
-                </a>
+                <div class="d-flex gap-2">
+                    <a href="{{ preferences }}"
+                       class="btn btn-outline-secondary">
+                        {{ text_view_preferences }}
+                    </a>
+
+                    <a href="{{ history }}"
+                       class="btn btn-outline-primary">
+                        {{ text_view_history }}
+                    </a>
+                </div>
             </div>
 
             <div class="card border-0 shadow-sm">

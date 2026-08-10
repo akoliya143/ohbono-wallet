@@ -1,14 +1,4 @@
 <?php
-/**
- * OHBONO Wallet Service.
- *
- * Financial mutations are centralized here. Every mutation:
- * - locks the wallet row
- * - checks idempotency by reference
- * - calculates before/after balances
- * - writes one transaction record
- * - commits atomically
- */
 class OhbonoWalletService
 {
     private $db;
@@ -27,16 +17,20 @@ class OhbonoWalletService
         int $order_id = 0,
         int $admin_user_id = 0
     ): int {
-        return $this->mutate(
-            $customer_id,
-            abs($amount),
-            $type,
-            'credit',
-            $reference,
-            $reason,
-            $order_id,
-            $admin_user_id
+        $id = $this->mutate(
+            $customer_id, abs($amount), $type, 'credit',
+            $reference, $reason, $order_id, $admin_user_id
         );
+
+        $this->createNotification(
+            $id,
+            'Your OHBONO Wallet was credited with ' .
+            $this->formatAmount($amount) . '.'
+        );
+
+        $this->queueEmail($id);
+
+        return $id;
     }
 
     public function debit(
@@ -48,16 +42,20 @@ class OhbonoWalletService
         int $order_id = 0,
         int $admin_user_id = 0
     ): int {
-        return $this->mutate(
-            $customer_id,
-            abs($amount),
-            $type,
-            'debit',
-            $reference,
-            $reason,
-            $order_id,
-            $admin_user_id
+        $id = $this->mutate(
+            $customer_id, abs($amount), $type, 'debit',
+            $reference, $reason, $order_id, $admin_user_id
         );
+
+        $this->createNotification(
+            $id,
+            'Your OHBONO Wallet was debited by ' .
+            $this->formatAmount($amount) . '.'
+        );
+
+        $this->queueEmail($id);
+
+        return $id;
     }
 
     private function mutate(
@@ -73,10 +71,8 @@ class OhbonoWalletService
         $amount = round($amount, 4);
         $reference = trim($reference);
 
-        if ($customer_id <= 0 ||
-            $amount <= 0 ||
-            $type === '' ||
-            $reference === '') {
+        if ($customer_id <= 0 || $amount <= 0 ||
+            $type === '' || $reference === '') {
             throw new \InvalidArgumentException(
                 'Invalid wallet mutation.'
             );
@@ -90,13 +86,11 @@ class OhbonoWalletService
                  FROM `" . DB_PREFIX . "wallet_transaction`
                  WHERE customer_id = '" . (int)$customer_id . "'
                  AND reference = '" . $this->db->escape($reference) . "'
-                 LIMIT 1
-                 FOR UPDATE"
+                 LIMIT 1 FOR UPDATE"
             );
 
             if ($existing->num_rows) {
                 $this->db->query("COMMIT");
-
                 return (int)$existing->row['transaction_id'];
             }
 
@@ -105,8 +99,7 @@ class OhbonoWalletService
                  FROM `" . DB_PREFIX . "wallet`
                  WHERE customer_id = '" . (int)$customer_id . "'
                  AND status = '1'
-                 LIMIT 1
-                 FOR UPDATE"
+                 LIMIT 1 FOR UPDATE"
             );
 
             if (!$wallet->num_rows) {
@@ -123,7 +116,6 @@ class OhbonoWalletService
                         'Insufficient wallet balance.'
                     );
                 }
-
                 $after = round($before - $amount, 4);
             } else {
                 $after = round($before + $amount, 4);
@@ -133,32 +125,75 @@ class OhbonoWalletService
                 "UPDATE `" . DB_PREFIX . "wallet`
                  SET balance = '" . (float)$after . "',
                      date_modified = NOW()
-                 WHERE wallet_id = '" . (int)$wallet->row['wallet_id'] . "'"
+                 WHERE wallet_id = '" .
+                    (int)$wallet->row['wallet_id'] . "'"
             );
 
             $this->db->query(
-                "INSERT INTO `" . DB_PREFIX . "wallet_transaction`
-                 SET wallet_id = '" . (int)$wallet->row['wallet_id'] . "',
+                "INSERT INTO `" .
+                DB_PREFIX . "wallet_transaction`
+                 SET wallet_id = '" .
+                    (int)$wallet->row['wallet_id'] . "',
                      customer_id = '" . (int)$customer_id . "',
                      type = '" . $this->db->escape($type) . "',
                      direction = '" . $this->db->escape($direction) . "',
                      amount = '" . (float)$amount . "',
                      balance_before = '" . (float)$before . "',
                      balance_after = '" . (float)$after . "',
-                     reference = '" . $this->db->escape($reference) . "',
+                     reference = '" .
+                        $this->db->escape($reference) . "',
                      order_id = '" . (int)$order_id . "',
-                     admin_user_id = '" . (int)$admin_user_id . "',
+                     admin_user_id = '" .
+                        (int)$admin_user_id . "',
                      date_added = NOW()"
             );
 
-            $transaction_id = (int)$this->db->getLastId();
+            $id = (int)$this->db->getLastId();
 
             $this->db->query("COMMIT");
 
-            return $transaction_id;
+            return $id;
         } catch (\Throwable $e) {
             $this->db->query("ROLLBACK");
             throw $e;
         }
+    }
+
+    private function createNotification(
+        int $transaction_id,
+        string $message
+    ): void {
+        try {
+            $service =
+                new \OhbonoWalletNotificationService($this->db);
+
+            $service->createForTransaction(
+                $transaction_id,
+                $message
+            );
+        } catch (\Throwable $e) {
+            error_log(
+                '[OHBONO Wallet] Notification failed: ' .
+                $e->getMessage()
+            );
+        }
+    }
+
+    private function queueEmail(int $transaction_id): void {
+        try {
+            $service =
+                new \OhbonoWalletEmailQueueService($this->db);
+
+            $service->queueTransactionEmail($transaction_id);
+        } catch (\Throwable $e) {
+            error_log(
+                '[OHBONO Wallet] Email queue failed: ' .
+                $e->getMessage()
+            );
+        }
+    }
+
+    private function formatAmount(float $amount): string {
+        return number_format(abs($amount), 2, '.', '');
     }
 }

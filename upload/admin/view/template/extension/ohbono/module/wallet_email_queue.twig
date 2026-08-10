@@ -1,0 +1,183 @@
+{{ header }}{{ column_left }}
+
+<div id="content">
+    <div class="page-header">
+        <div class="container-fluid">
+            <h1>{{ heading_title }}</h1>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row g-3 mb-3">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="small text-muted">Pending</div>
+                        <div class="fs-3 fw-bold">
+                            {{ stats.pending }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="small text-muted">Processing</div>
+                        <div class="fs-3 fw-bold">
+                            {{ stats.processing }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="small text-muted">Sent</div>
+                        <div class="fs-3 fw-bold">
+                            {{ stats.sent }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-sm-6 col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="small text-muted">Failed</div>
+                        <div class="fs-3 fw-bold text-danger">
+                            {{ stats.failed }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="get" class="card mb-3">
+            <div class="card-body d-flex gap-2">
+                <input type="hidden"
+                       name="route"
+                       value="extension/ohbono/module/wallet_email_queue">
+
+                <select name="filter_status"
+                        class="form-select"
+                        style="max-width:220px">
+                    <option value="">
+                        {{ text_all }}
+                    </option>
+                    <option value="pending"
+                        {% if filter_status == 'pending' %}selected{% endif %}>
+                        Pending
+                    </option>
+                    <option value="processing"
+                        {% if filter_status == 'processing' %}selected{% endif %}>
+                        Processing
+                    </option>
+                    <option value="sent"
+                        {% if filter_status == 'sent' %}selected{% endif %}>
+                        Sent
+                    </option>
+                    <option value="failed"
+                        {% if filter_status == 'failed' %}selected{% endif %}>
+                        Failed
+                    </option>
+                </select>
+
+                <button class="btn btn-primary"
+                        type="submit">
+                    {{ text_filter }}
+                </button>
+            </div>
+        </form>
+
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Customer</th>
+                            <th>Transaction</th>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Attempts</th>
+                            <th>Available</th>
+                            <th>Last Error</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for queue in queues %}
+                            <tr>
+                                <td>{{ queue.queue_id }}</td>
+                                <td>
+                                    {{ queue.customer|trim }}
+                                    <div class="small text-muted">
+                                        {{ queue.email }}
+                                    </div>
+                                </td>
+                                <td>#{{ queue.transaction_id }}</td>
+                                <td>{{ queue.subject }}</td>
+                                <td>{{ queue.status }}</td>
+                                <td>{{ queue.attempts }}</td>
+                                <td>{{ queue.available_at }}</td>
+                                <td>
+                                    {% if queue.last_error %}
+                                        <span class="small text-danger">
+                                            {{ queue.last_error }}
+                                        </span>
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if queue.status == 'failed' %}
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-primary ohbono-retry"
+                                                data-id="{{ queue.queue_id }}">
+                                            Retry
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="9"
+                                    class="text-center py-5">
+                                    {{ text_no_results }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.ohbono-retry')
+    .forEach(function (button) {
+        button.addEventListener('click', function () {
+            fetch('{{ retry_url }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type':
+                        'application/x-www-form-urlencoded'
+                },
+                body: 'queue_id=' +
+                    encodeURIComponent(button.dataset.id)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                }
+            });
+        });
+    });
+</script>
+
+{{ footer }}

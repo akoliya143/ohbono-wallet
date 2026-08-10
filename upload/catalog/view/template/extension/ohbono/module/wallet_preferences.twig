@@ -1,0 +1,130 @@
+{{ header }}
+
+<div id="account-wallet-preferences" class="container">
+    <div class="row">
+        {{ column_left }}
+
+        <div id="content" class="col">
+            {{ content_top }}
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ heading_title }}</h1>
+
+                <a href="{{ wallet }}"
+                   class="btn btn-outline-secondary">
+                    Back to Wallet
+                </a>
+            </div>
+
+            <div id="ohbono-preference-message"
+                 class="alert alert-success d-none">
+                {{ text_saved }}
+            </div>
+
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent">
+                    <strong>{{ text_email_notifications }}</strong>
+                </div>
+
+                <div class="card-body">
+                    <form id="ohbono-wallet-preferences"
+                          action="{{ action }}"
+                          method="post">
+
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="email_enabled"
+                                   id="email_enabled"
+                                   {% if preferences.email_enabled %}checked{% endif %}>
+
+                            <label class="form-check-label"
+                                   for="email_enabled">
+                                {{ text_email_enabled }}
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="email_credit"
+                                   id="email_credit"
+                                   {% if preferences.email_credit %}checked{% endif %}>
+
+                            <label class="form-check-label"
+                                   for="email_credit">
+                                {{ text_email_credit }}
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="email_debit"
+                                   id="email_debit"
+                                   {% if preferences.email_debit %}checked{% endif %}>
+
+                            <label class="form-check-label"
+                                   for="email_debit">
+                                {{ text_email_debit }}
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-4">
+                            <input class="form-check-input"
+                                   type="checkbox"
+                                   name="email_refund"
+                                   id="email_refund"
+                                   {% if preferences.email_refund %}checked{% endif %}>
+
+                            <label class="form-check-label"
+                                   for="email_refund">
+                                {{ text_email_refund }}
+                            </label>
+                        </div>
+
+                        <button type="submit"
+                                class="btn btn-primary">
+                            {{ button_save }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            {{ content_bottom }}
+        </div>
+
+        {{ column_right }}
+    </div>
+</div>
+
+<script>
+(function () {
+    const form =
+        document.getElementById('ohbono-wallet-preferences');
+
+    const message =
+        document.getElementById('ohbono-preference-message');
+
+    form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                message.classList.remove('d-none');
+
+                setTimeout(function () {
+                    message.classList.add('d-none');
+                }, 3000);
+            }
+        });
+    });
+})();
+</script>
+
+{{ footer }}

@@ -1,3 +1,0 @@
-OHBONO Wallet Pro
-Commit 0003
-Database foundation

@@ -1,0 +1,50 @@
+{{ header }}
+<div id="account-wallet-notifications" class="container">
+  <div class="row">
+    {{ column_left }}
+    <div id="content" class="col">
+      {{ content_top }}
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ heading_title }}</h1>
+        <a href="{{ wallet }}" class="btn btn-outline-secondary">Back to Wallet</a>
+      </div>
+      <div class="list-group shadow-sm">
+        {% for notification in notifications %}
+        <div class="list-group-item {% if not notification.is_read %}fw-semibold{% endif %}">
+          <div class="d-flex justify-content-between gap-3">
+            <div>
+              <a href="{{ notification.transaction_href }}" class="text-decoration-none">{{ notification.title }}</a>
+              <div class="small text-muted mt-1">{{ notification.message }}</div>
+              <div class="small text-muted mt-2">{{ notification.date_added }}</div>
+            </div>
+            {% if not notification.is_read %}
+            <button type="button" class="btn btn-sm btn-outline-primary ohbono-mark-read" data-id="{{ notification.notification_id }}">{{ text_mark_read }}</button>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="list-group-item text-center py-5">{{ text_no_notifications }}</div>
+        {% endfor %}
+      </div>
+      {{ content_bottom }}
+    </div>
+    {{ column_right }}
+  </div>
+</div>
+<script>
+document.querySelectorAll('.ohbono-mark-read').forEach(function(button) {
+  button.addEventListener('click', function() {
+    fetch('{{ mark_read_url }}', {
+      method: 'POST',
+      headers: {'Content-Type':'application/x-www-form-urlencoded'},
+      body: 'notification_id=' + encodeURIComponent(button.dataset.id)
+    }).then(r => r.json()).then(data => {
+      if (data.success) {
+        button.closest('.list-group-item').classList.remove('fw-semibold');
+        button.remove();
+      }
+    });
+  });
+});
+</script>
+{{ footer }}
