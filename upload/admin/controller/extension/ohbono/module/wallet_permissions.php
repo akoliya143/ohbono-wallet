@@ -3,54 +3,56 @@ namespace Opencart\Admin\Controller\Extension\Ohbono\Module;
 
 class WalletPermissions extends \Opencart\System\Engine\Controller
 {
-    public function install(): void
+    public function index(): void
     {
-        if (!$this->user->hasPermission('modify', 'extension/ohbono/module/wallet_permissions')) {
+        if (!$this->user->hasPermission(
+            'modify',
+            'extension/ohbono/module/wallet_permissions'
+        )) {
+            $this->response->setOutput(
+                'Permission denied.'
+            );
             return;
         }
 
         $this->load->model('user/user_group');
 
+        $groups = $this->model_user_user_group
+            ->getUserGroups();
+
         $routes = [
-            'extension/ohbono/module/wallet_dashboard',
-            'extension/ohbono/module/wallet_customer',
-            'extension/ohbono/module/wallet_settings',
-            'extension/ohbono/payment/wallet'
+            'extension/ohbono/module/wallet_reconciliation',
+            'extension/ohbono/module/wallet_refund',
+            'extension/ohbono/module/wallet_diagnostics'
         ];
 
-        $groups = $this->getRelevantGroups();
+        foreach ($groups as $group) {
+            $permissions = [
+                'access' => $routes,
+                'modify' => $routes
+            ];
 
-        foreach ($groups as $user_group_id) {
-            foreach ($routes as $route) {
-                $this->model_user_user_group->addPermission(
-                    (int)$user_group_id,
-                    'access',
-                    $route
-                );
+            $this->model_user_user_group->addPermission(
+                (int)$group['user_group_id'],
+                'access',
+                'extension/ohbono/module/wallet_reconciliation'
+            );
 
-                $this->model_user_user_group->addPermission(
-                    (int)$user_group_id,
-                    'modify',
-                    $route
-                );
-            }
+            $this->model_user_user_group->addPermission(
+                (int)$group['user_group_id'],
+                'modify',
+                'extension/ohbono/module/wallet_refund'
+            );
+
+            $this->model_user_user_group->addPermission(
+                (int)$group['user_group_id'],
+                'access',
+                'extension/ohbono/module/wallet_diagnostics'
+            );
         }
-    }
 
-    private function getRelevantGroups(): array
-    {
-        $query = $this->db->query(
-            "SELECT `user_group_id`
-             FROM `" . DB_PREFIX . "user_group`
-             WHERE `name` IN ('Administrator', 'Super Administrator')"
+        $this->response->setOutput(
+            'OHBONO Wallet permissions initialized.'
         );
-
-        $groups = [];
-
-        foreach ($query->rows as $row) {
-            $groups[] = (int)$row['user_group_id'];
-        }
-
-        return array_values(array_unique($groups));
     }
 }

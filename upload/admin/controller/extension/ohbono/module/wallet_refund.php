@@ -16,6 +16,20 @@ class WalletRefund extends \Opencart\System\Engine\Controller
             return;
         }
 
+        /*
+         * OpenCart admin POST requests should carry the current admin token
+         * through the normal admin URL/session mechanism. This controller also
+         * rejects non-POST requests so the mutation cannot be triggered by a
+         * simple GET request.
+         */
+        if ($this->request->server['REQUEST_METHOD'] !== 'POST') {
+            $this->json([
+                'success' => false,
+                'error' => 'POST request required.'
+            ]);
+            return;
+        }
+
         $customer_id = (int)(
             $this->request->post['customer_id'] ?? 0
         );
@@ -32,18 +46,23 @@ class WalletRefund extends \Opencart\System\Engine\Controller
             $this->request->post['reason'] ?? ''
         ));
 
-        if ($customer_id <= 0 ||
-            $order_id <= 0 ||
-            $reference === '' ||
-            $reason === '') {
-            $this->json([
-                'success' => false,
-                'error' => 'Customer, order, reference and reason are required.'
-            ]);
-            return;
-        }
-
         try {
+            $reference =
+                \OhbonoWalletSecurity::validateReference(
+                    $reference
+                );
+
+            $reason =
+                \OhbonoWalletSecurity::validateReason(
+                    $reason
+                );
+
+            if ($customer_id <= 0 || $order_id <= 0) {
+                throw new \InvalidArgumentException(
+                    'Customer and order are required.'
+                );
+            }
+
             $reversal =
                 new \OhbonoWalletReversalService(
                     $this->db

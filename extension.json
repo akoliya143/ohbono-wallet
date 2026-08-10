@@ -1,7 +1,9 @@
 {
-    "name": "OHBONO Wallet Pro",
-    "code": "ohbono_wallet",
-    "version": "1.0.0",
-    "author": "OHBONO",
-    "link": "https://ohbono.com"
+  "name": "OHBONO Wallet",
+  "version": "1.0.0",
+  "author": "OHBONO",
+  "link": "https://mdilipkumar.com/ob",
+  "code": "ohbono_wallet",
+  "description": "OHBONO Wallet and checkout payment extension",
+  "compatibility": "OpenCart 4.1.x"
 }
